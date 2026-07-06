@@ -74,6 +74,10 @@ const periodBounds = (mode: PeriodMode, month: string, year: string, from: strin
   return { from: "", to: "" };
 };
 const period = (date?: string) => { const d = date && new Date(date); return d && !Number.isNaN(+d) ? `Q${Math.floor(d.getMonth()/3)+1} ${d.getFullYear()}` : "Undated"; };
+const periodOrder = (label: string) => {
+  const match = /^Q([1-4]) (\d{4})$/.exec(label);
+  return match ? Number(match[2]) * 4 + Number(match[1]) : Number.MAX_SAFE_INTEGER;
+};
 const isFromImport = (item: Answer | Verbatim, target: ImportItem, imports: ImportItem[]) => {
   if (item.importId) return item.importId === target.id;
   if ("source" in item && item.source === target.name) return true;
@@ -161,7 +165,7 @@ function App() {
     answers: Number((average(filteredAnswers.filter(a=>a.category===name).map(a=>a.score)) ?? 0).toFixed(2)),
     forms: Number((average(filteredVerbatims.filter(v=>v.category===name && v.score != null).map(v=>v.score!)) ?? 0).toFixed(2)),
   })).filter(x => x.answers || x.forms);
-  const periods = [...new Set(filteredAnswers.map(a=>period(a.date)))].filter(x=>x!=="Undated").map(name => ({ name, value: average(filteredAnswers.filter(a=>period(a.date)===name).map(a=>a.score))! }));
+  const periods = [...new Set(filteredAnswers.map(a=>period(a.date)))].filter(x=>x!=="Undated").sort((a, b) => periodOrder(a) - periodOrder(b)).map(name => ({ name, value: average(filteredAnswers.filter(a=>period(a.date)===name).map(a=>a.score))! }));
   const filtered = filteredVerbatims.filter(v => (sentiment === "All" || v.sentiment === sentiment) && (category === "All" || v.category === category) && `${v.content} ${v.question}`.toLowerCase().includes(query.toLowerCase()));
   const nav = [{ id:"dashboard", label:"Dashboard", icon:LayoutDashboard }, { id:"verbatims", label:"Verbatims", icon:MessageSquareText }, { id:"reports", label:"Reports", icon:BarChart3 }] as const;
   return <div className="app">
