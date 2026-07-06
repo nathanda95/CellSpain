@@ -6,14 +6,15 @@ import {
 import {
   BarChart3, FileSpreadsheet, FileText, FolderOpen, LayoutDashboard, MessageSquareText,
   Search, Settings, Upload, X, ChevronDown, Clock3, CheckCircle2, AlertCircle, CalendarDays,
+  Trash2,
 } from "lucide-react";
 import "./App.css";
 
 type Sentiment = "Positive" | "Neutral" | "Negative";
 type Status = "New" | "To review" | "Done" | "Ignored";
 type PeriodMode = "All" | "Month" | "Year" | "Custom period";
-type Answer = { question: string; category: string; score: number; date?: string; seniority?: string };
-type Verbatim = { id: string; content: string; question: string; category: string; score?: number; sentiment?: Sentiment; date?: string; role?: string; seniority?: string; source: string; sheet: string; status: Status; note: string };
+type Answer = { question: string; category: string; score: number; date?: string; seniority?: string; source?: string; importId?: string };
+type Verbatim = { id: string; content: string; question: string; category: string; score?: number; sentiment?: Sentiment; date?: string; role?: string; seniority?: string; source: string; sheet: string; status: Status; note: string; importId?: string };
 type ImportItem = { id: string; name: string; size: number; importedAt: string; status: "Completed" | "Error"; rows: number; verbatims: number; error?: string };
 type Dataset = { answers: Answer[]; verbatims: Verbatim[]; imports: ImportItem[] };
 
@@ -73,8 +74,14 @@ const periodBounds = (mode: PeriodMode, month: string, year: string, from: strin
   return { from: "", to: "" };
 };
 const period = (date?: string) => { const d = date && new Date(date); return d && !Number.isNaN(+d) ? `Q${Math.floor(d.getMonth()/3)+1} ${d.getFullYear()}` : "Undated"; };
+const isFromImport = (item: Answer | Verbatim, target: ImportItem, imports: ImportItem[]) => {
+  if (item.importId) return item.importId === target.id;
+  if ("source" in item && item.source === target.name) return true;
+  const completedImports = imports.filter(i => i.status === "Completed");
+  return completedImports.length === 1 && completedImports[0].id === target.id;
+};
 
-function parseWorkbook(file: File): Promise<{ answers: Answer[]; verbatims: Verbatim[]; rows: number }> {
+function parseWorkbook(file: File, importId: string): Promise<{ answers: Answer[]; verbatims: Verbatim[]; rows: number }> {
   return file.arrayBuffer().then(async (buffer) => {
     const json = file.name.toLowerCase().endsWith(".json")
       ? JSON.parse(await file.text()) as unknown
@@ -101,10 +108,10 @@ function parseWorkbook(file: File): Promise<{ answers: Answer[]; verbatims: Verb
         const seniority = String(row[headers.find((h) => /how long|seniority/i.test(h)) ?? ""] || "") || undefined;
         headers.forEach((header) => {
           const value = row[header]; const score = mapAnswerToScore(value); const category = categoryOf(header);
-          if (score !== null && category !== "Other") answers.push({ question: header, category, score, date, seniority });
+          if (score !== null && category !== "Other") answers.push({ question: header, category, score, date, seniority, source: file.name, importId });
           if (isComment(header, value)) {
             const related = [...answers].reverse().find((a: Answer) => a.date === date && a.category !== "Other");
-            verbatims.push({ id: crypto.randomUUID(), content: String(value).trim(), question: header, category: related?.category ?? category, score: related?.score, sentiment: scoreToSentiment(related?.score), date, role, seniority, source: file.name, sheet: sheetName, status: "New", note: "" });
+            verbatims.push({ id: crypto.randomUUID(), content: String(value).trim(), question: header, category: related?.category ?? category, score: related?.score, sentiment: scoreToSentiment(related?.score), date, role, seniority, source: file.name, sheet: sheetName, status: "New", note: "", importId });
           }
         });
       });
@@ -127,9 +134,20 @@ function App() {
   const importFiles = async (files: FileList | File[]) => {
     for (const file of Array.from(files)) {
       const base = { id: crypto.randomUUID(), name: file.name, size: file.size, importedAt: new Date().toISOString(), status: "Completed" as const, rows: 0, verbatims: 0 };
-      try { const parsed = await parseWorkbook(file); setData((d) => ({ answers: [...d.answers, ...parsed.answers], verbatims: [...d.verbatims, ...parsed.verbatims], imports: [{ ...base, rows: parsed.rows, verbatims: parsed.verbatims.length }, ...d.imports] })); }
+      try { const parsed = await parseWorkbook(file, base.id); setData((d) => ({ answers: [...d.answers, ...parsed.answers], verbatims: [...d.verbatims, ...parsed.verbatims], imports: [{ ...base, rows: parsed.rows, verbatims: parsed.verbatims.length }, ...d.imports] })); }
       catch (err) { setData((d) => ({ ...d, imports: [{ ...base, status: "Error", error: err instanceof Error ? err.message : "Unreadable file" }, ...d.imports] })); }
     }
+  };
+  const removeImport = (item: ImportItem) => {
+    const message = item.status === "Completed"
+      ? `Remove "${item.name}" and its imported data from this dashboard?`
+      : `Remove "${item.name}" from the import history?`;
+    if (!window.confirm(message)) return;
+    setData((d) => ({
+      answers: item.status === "Completed" ? d.answers.filter(a => !isFromImport(a, item, d.imports)) : d.answers,
+      verbatims: item.status === "Completed" ? d.verbatims.filter(v => !isFromImport(v, item, d.imports)) : d.verbatims,
+      imports: d.imports.filter(i => i.id !== item.id),
+    }));
   };
   const activePeriod = periodBounds(periodMode, periodMonth, periodYear, dateFrom, dateTo);
   const filteredAnswers = data.answers.filter(a => isWithinDateRange(a.date, activePeriod.from, activePeriod.to));
@@ -162,7 +180,7 @@ function App() {
       </>}
       {page === "reports" && <><div className="title"><div><h1>Import data</h1><p>Files remain on this device. No information is sent online.</p></div></div>
         <section className="import-area" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault(); importFiles(e.dataTransfer.files)}} onClick={()=>input.current?.click()}><input ref={input} hidden type="file" accept=".xlsx,.xls,.csv,.json" multiple onChange={e=>e.target.files && importFiles(e.target.files)}/><span className="upload"><Upload size={27}/></span><h2>Drop your files here</h2><p>or select files from your computer</p><button className="primary" onClick={e=>{e.stopPropagation(); input.current?.click()}}><FolderOpen size={17}/> Browse files</button><small>Accepted formats: XLSX, CSV, JSON</small></section>
-        <section className="recent"><div><h2>Recent imports</h2><span>{data.imports.length} file{data.imports.length!==1?"s":""}</span></div>{!data.imports.length ? <Empty title="No imported files yet" detail="Your successful imports will appear here."/> : <table><thead><tr><th>File name</th><th>Status</th><th>Imported</th><th>Size</th><th>Rows</th><th>Verbatims</th></tr></thead><tbody>{data.imports.map(i=><tr key={i.id}><td><FileText size={17}/>{i.name}</td><td><span className={`status ${i.status.toLowerCase()}`}>{i.status === "Completed" ? <CheckCircle2 size={14}/> : <AlertCircle size={14}/>} {i.status}</span></td><td>{dateLabel(i.importedAt)}</td><td>{(i.size/1024).toFixed(1)} KB</td><td>{i.rows}</td><td>{i.verbatims}</td></tr>)}</tbody></table>}</section>
+        <section className="recent"><div><h2>Recent imports</h2><span>{data.imports.length} file{data.imports.length!==1?"s":""}</span></div>{!data.imports.length ? <Empty title="No imported files yet" detail="Your successful imports will appear here."/> : <table><thead><tr><th>File name</th><th>Status</th><th>Imported</th><th>Size</th><th>Rows</th><th>Verbatims</th><th>Actions</th></tr></thead><tbody>{data.imports.map(i=><tr key={i.id}><td><FileText size={17}/>{i.name}</td><td><span className={`status ${i.status.toLowerCase()}`}>{i.status === "Completed" ? <CheckCircle2 size={14}/> : <AlertCircle size={14}/>} {i.status}</span></td><td>{dateLabel(i.importedAt)}</td><td>{(i.size/1024).toFixed(1)} KB</td><td>{i.rows}</td><td>{i.verbatims}</td><td><button className="icon danger" title={`Remove ${i.name}`} onClick={()=>removeImport(i)}><Trash2 size={16}/></button></td></tr>)}</tbody></table>}</section>
       </>}
     </main>{selected && <Details item={selected} onClose={()=>setSelected(null)} onSave={(patch)=>{setData(d=>({...d,verbatims:d.verbatims.map(v=>v.id===selected.id?{...v,...patch}:v)}));setSelected({...selected,...patch});}}/>}
   </div>;
