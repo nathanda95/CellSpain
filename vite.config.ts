@@ -16,7 +16,10 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
+    // WSL's Windows localhost forwarding can become unavailable after network,
+    // VPN or WSL updates. Listening on the WSL interface keeps the dev server
+    // reachable from the Windows browser as well as from Tauri.
+    host: host || "0.0.0.0",
     hmr: host
       ? {
           protocol: "ws",
