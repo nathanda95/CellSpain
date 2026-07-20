@@ -189,6 +189,9 @@ main {
   width: 100%;
   height: 290px;
 }
+.trend-chart .recharts-legend-item {
+  cursor: pointer;
+}
 .axis {
   display: flex;
   justify-content: space-between;

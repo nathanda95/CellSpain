@@ -980,6 +980,16 @@ const ChartCard = ({
               setHoveredSeries(String(entry.dataKey ?? entry.value))
             }
             onMouseLeave={() => setHoveredSeries(null)}
+            onClick={(entry) => {
+              const key = String(entry.dataKey ?? "");
+              if (
+                key === "overall" ||
+                series.some((item) => item.key === key)
+              ) {
+                setSelectedSeries(key);
+                setHoveredSeries(null);
+              }
+            }}
           />
           {showOverall && (
             <Line
