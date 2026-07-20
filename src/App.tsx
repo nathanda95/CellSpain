@@ -844,6 +844,7 @@ const ChartCard = ({
   };
 }) => {
   const [selectedSeries, setSelectedSeries] = useState("all");
+  const [hoveredSeries, setHoveredSeries] = useState<string | null>(null);
 
   useEffect(() => {
     if (
@@ -944,6 +945,10 @@ const ChartCard = ({
             layout="vertical"
             iconType="plainline"
             wrapperStyle={{ fontSize: 11, paddingLeft: 12 }}
+            onMouseEnter={(entry) =>
+              setHoveredSeries(String(entry.dataKey ?? entry.value))
+            }
+            onMouseLeave={() => setHoveredSeries(null)}
           />
           {showOverall && (
             <Line
@@ -952,9 +957,13 @@ const ChartCard = ({
               dataKey="overall"
               stroke="#1c2332"
               strokeWidth={2.5}
+              opacity={
+                hoveredSeries && hoveredSeries !== "overall" ? 0.15 : 1
+              }
               dot={{ r: 3.5, fill: "#1c2332" }}
               activeDot={{ r: 5 }}
               connectNulls
+              style={{ transition: "opacity 180ms ease" }}
             />
           )}
           {visibleSeries.map((item) => {
@@ -970,12 +979,16 @@ const ChartCard = ({
               dataKey={item.key}
               stroke={color}
               strokeWidth={2}
+              opacity={
+                hoveredSeries && hoveredSeries !== item.key ? 0.15 : 1
+              }
               dot={{
                 r: 3.5,
                 fill: color,
               }}
               activeDot={{ r: 5 }}
               connectNulls
+              style={{ transition: "opacity 180ms ease" }}
             />
             );
           })}
