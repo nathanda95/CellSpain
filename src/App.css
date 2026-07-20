@@ -242,6 +242,7 @@ main {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   align-items: stretch;
+  padding-bottom: 24px;
 }
 .service-y-axis {
   height: 190px;
@@ -257,6 +258,15 @@ main {
 .service-card .seniority {
   gap: 16px;
   padding-inline: 12px;
+}
+.service-card .seniority > div {
+  padding-bottom: 0;
+}
+.service-card .seniority span {
+  bottom: -20px;
+}
+.service-card .seniority b {
+  bottom: 8px;
 }
 .seniority > div {
   height: 100%;
