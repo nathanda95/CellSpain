@@ -862,11 +862,42 @@ const ChartCard = ({
       : series.filter((item) => item.key === selectedSeries);
   const showOverall =
     selectedSeries === "all" || selectedSeries === "overall";
+  const trendPoints =
+    selectedSeries === "all"
+      ? []
+      : values.flatMap((point, index) => {
+          const score = point[selectedSeries];
+          return typeof score === "number" ? [{ index, score }] : [];
+        });
+  const trendData: Record<string, string | number | undefined>[] = (() => {
+    if (trendPoints.length < 2) return values;
+
+    const xAverage = average(trendPoints.map((point) => point.index)) ?? 0;
+    const yAverage = average(trendPoints.map((point) => point.score)) ?? 0;
+    const numerator = trendPoints.reduce(
+      (sum, point) =>
+        sum + (point.index - xAverage) * (point.score - yAverage),
+      0,
+    );
+    const denominator = trendPoints.reduce(
+      (sum, point) => sum + (point.index - xAverage) ** 2,
+      0,
+    );
+    const slope = denominator === 0 ? 0 : numerator / denominator;
+    const intercept = yAverage - slope * xAverage;
+
+    return values.map((point, index) => ({
+      ...point,
+      __trend: Math.max(0, Math.min(4, intercept + slope * index)),
+    }));
+  })();
+  const showTrend = selectedSeries !== "all" && trendPoints.length >= 2;
   const visibleKeys = [
     ...(showOverall ? ["overall"] : []),
     ...visibleSeries.map((item) => item.key),
+    ...(showTrend ? ["__trend"] : []),
   ];
-  const visibleScores = values.flatMap((point) =>
+  const visibleScores = trendData.flatMap((point) =>
     visibleKeys
       .map((key) => point[key])
       .filter((value): value is number => typeof value === "number"),
@@ -920,7 +951,7 @@ const ChartCard = ({
     {values.length > 1 ? (
       <div className="trend-chart">
         <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={values} margin={{ top: 8, right: 12, bottom: 42, left: 0 }}>
+        <LineChart data={trendData} margin={{ top: 8, right: 12, bottom: 42, left: 0 }}>
           <CartesianGrid stroke="#e5e6ef" strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
@@ -992,6 +1023,32 @@ const ChartCard = ({
             />
             );
           })}
+          {showTrend && (
+            <Line
+              type="linear"
+              name="Trend"
+              dataKey="__trend"
+              stroke={
+                selectedSeries === "overall"
+                  ? "#777b8e"
+                  : TREND_COLORS[
+                      Math.max(
+                        0,
+                        series.findIndex((item) => item.key === selectedSeries),
+                      ) % TREND_COLORS.length
+                    ]
+              }
+              strokeWidth={2}
+              strokeDasharray="6 5"
+              opacity={
+                hoveredSeries && hoveredSeries !== "__trend" ? 0.15 : 0.8
+              }
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              style={{ transition: "opacity 180ms ease" }}
+            />
+          )}
         </LineChart>
         </ResponsiveContainer>
       </div>
