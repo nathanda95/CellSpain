@@ -9,8 +9,12 @@ import {
   type ResponseType,
 } from "./questionnaire.types";
 
-const keyFrom = (value: string) =>
-  value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+const nextStableKey = (prefix: "category" | "question", keys: string[]) => {
+  const usedKeys = new Set(keys);
+  let index = 1;
+  while (usedKeys.has(`${prefix}_${index}`)) index += 1;
+  return `${prefix}_${index}`;
+};
 
 export function QuestionnaireSettings({
   active,
@@ -34,11 +38,11 @@ export function QuestionnaireSettings({
     setQuestions((items) => items.map((item, i) => i === index ? { ...item, ...patch } : item));
   const addCategory = () => setCategories((items) => [
     ...items,
-    { stableKey: `category_${items.length + 1}`, name: "New category", active: true },
+    { stableKey: nextStableKey("category", items.map((item) => item.stableKey)), name: "New category", active: true },
   ]);
   const addQuestion = () => setQuestions((items) => [
     ...items,
-    { stableKey: `question_${items.length + 1}`, label: "New question", sourceColumn: "", categoryKey: categories[0]?.stableKey ?? "", responseType: "rating", required: false, active: true, scoreMapping: { ...DEFAULT_SCORE_MAPPING } },
+    { stableKey: nextStableKey("question", items.map((item) => item.stableKey)), label: "New question", sourceColumn: "", categoryKey: categories[0]?.stableKey ?? "", responseType: "rating", required: false, active: true, scoreMapping: { ...DEFAULT_SCORE_MAPPING } },
   ]);
   const save = () => {
     const errors = validateQuestionnaire(categories, questions);
@@ -81,7 +85,6 @@ export function QuestionnaireSettings({
     <section className="card config-section">
       <div className="config-heading"><div><h2>Categories</h2><p>Deactivate categories instead of deleting historical definitions.</p></div><button className="outline" onClick={addCategory}><Plus size={16}/> Add category</button></div>
       <div className="config-list">{categories.map((item, index) => <div className="config-category" key={`${item.stableKey}-${index}`}>
-        <label>Technical key<input value={item.stableKey} onChange={(e) => updateCategory(index, { stableKey: keyFrom(e.target.value) })}/></label>
         <label>Name<input value={item.name} onChange={(e) => updateCategory(index, { name: e.target.value })}/></label>
         <label>Description<input value={item.description ?? ""} onChange={(e) => updateCategory(index, { description: e.target.value })}/></label>
         <label className="check"><input type="checkbox" checked={item.active} onChange={(e) => updateCategory(index, { active: e.target.checked })}/> Active</label>
@@ -92,7 +95,6 @@ export function QuestionnaireSettings({
       <div className="config-heading"><div><h2>Questions</h2><p>Column names must exactly match the imported file.</p></div><button className="outline" disabled={!categories.length} onClick={addQuestion}><Plus size={16}/> Add question</button></div>
       <div className="question-list">{questions.map((item, index) => <article className="question-config" key={`${item.stableKey}-${index}`}>
         <div className="question-fields">
-          <label>Technical key<input value={item.stableKey} onChange={(e) => updateQuestion(index, { stableKey: keyFrom(e.target.value) })}/></label>
           <label>Display label<input value={item.label} onChange={(e) => updateQuestion(index, { label: e.target.value })}/></label>
           <label>Expected file column<input value={item.sourceColumn} onChange={(e) => updateQuestion(index, { sourceColumn: e.target.value })}/></label>
           <label>Category<select value={item.categoryKey} onChange={(e) => updateQuestion(index, { categoryKey: e.target.value })}>{categories.map((category) => <option value={category.stableKey} key={category.stableKey}>{category.name}</option>)}</select></label>
