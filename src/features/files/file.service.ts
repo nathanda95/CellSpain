@@ -41,6 +41,11 @@ const SENIORITY_COLUMN = /how long|seniority/i;
 const SYSTEM_COLUMN = /^(id|email|name|last modified time|survey quarter|test respondent id)$/i;
 const SYSTEM_QUESTION_COLUMN = /would you say that your overall situation is improving|would you like to be contacted by hr|who are you|areas should be our mains? focus for improvement/i;
 
+// Excel/CSV headers commonly contain invisible trailing spaces or slightly
+// different casing. They should still match the configured source column.
+const normalizedColumn = (value: string) =>
+  value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+
 function categoryKeyFromName(configuration: QuestionnaireConfig, name: string) {
   return configuration.categories.find((item) => item.name === name)?.stableKey ?? "";
 }
@@ -84,10 +89,24 @@ const isSystemColumn = (header: string) =>
 
 function effectiveQuestions(headers: string[], configuration: QuestionnaireConfig) {
   if (configuration.legacyAutoDetect) return [];
-  const explicit = configuration.questions.filter((item) => item.active);
-  const explicitColumns = new Set(explicit.map((item) => item.sourceColumn));
+  const headerByNormalizedName = new Map(
+    headers.map((header) => [normalizedColumn(header), header]),
+  );
+  const explicit = configuration.questions
+    .filter((item) => item.active)
+    .map((item) => ({
+      ...item,
+      // Use the actual workbook header when it differs only in formatting so
+      // row lookup succeeds without weakening the configured questionnaire.
+      sourceColumn:
+        headerByNormalizedName.get(normalizedColumn(item.sourceColumn)) ??
+        item.sourceColumn,
+    }));
+  const explicitColumns = new Set(
+    explicit.map((item) => normalizedColumn(item.sourceColumn)),
+  );
   const builtIns = headers
-    .filter((header) => !explicitColumns.has(header))
+    .filter((header) => !explicitColumns.has(normalizedColumn(header)))
     .map((header) => builtInQuestion(header, configuration))
     .filter((item): item is QuestionConfig => Boolean(item));
   return [...explicit, ...builtIns];
@@ -118,9 +137,12 @@ export async function parseWorkbook(
       throw new Error(`Missing required column${missing.length > 1 ? "s" : ""}: ${missing.map((item) => item.sourceColumn).join(", ")}`);
     }
     if (!configuration.legacyAutoDetect) {
-      const known = new Set(configured.map((item) => item.sourceColumn));
+      const known = new Set(
+        configured.map((item) => normalizedColumn(item.sourceColumn)),
+      );
       const unknown = headers.filter(
-        (header) => !known.has(header) && !isSystemColumn(header),
+        (header) =>
+          !known.has(normalizedColumn(header)) && !isSystemColumn(header),
       );
       if (unknown.length) result.warnings.push(`${unknown.length} unconfigured column${unknown.length > 1 ? "s" : ""}: ${unknown.join(", ")}`);
     }

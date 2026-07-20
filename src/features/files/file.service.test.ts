@@ -34,6 +34,25 @@ describe("configured imports", () => {
     });
   });
 
+  it("uses the configured category when the workbook header only differs in formatting", async () => {
+    const config = configuredVersion();
+    config.categories.push({ stableKey: "test", name: "Test", active: true });
+    config.questions[0].categoryKey = "test";
+
+    const result = await parseWorkbook(
+      jsonFile([{ "  MANAGER   TRUST ": "top!" }]),
+      "import-formatted-header",
+      config,
+    );
+
+    expect(result.answers).toHaveLength(1);
+    expect(result.answers[0]).toMatchObject({
+      questionKey: "manager_trust",
+      category: "Test",
+    });
+    expect(result.warnings).toEqual([]);
+  });
+
   it("blocks an import when a required column is absent", async () => {
     await expect(parseWorkbook(jsonFile([{ Unknown: "top" }]), "import-2", configuredVersion()))
       .rejects.toThrow("Missing required column: Manager trust");
