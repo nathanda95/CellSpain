@@ -350,10 +350,6 @@ function App() {
                     value={`${medianScore!.toFixed(1)}/4`}
                   />
                   <Metric
-                    label="Responses scored"
-                    value={String(scores.length)}
-                  />
-                  <Metric
                     label="Verbatims detected"
                     value={String(filteredVerbatims.length)}
                   />
