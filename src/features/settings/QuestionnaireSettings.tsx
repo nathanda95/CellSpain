@@ -44,6 +44,14 @@ export function QuestionnaireSettings({
     ...items,
     { stableKey: nextStableKey("question", items.map((item) => item.stableKey)), label: "New question", sourceColumn: "", categoryKey: categories[0]?.stableKey ?? "", responseType: "rating", required: false, active: true, scoreMapping: { ...DEFAULT_SCORE_MAPPING } },
   ]);
+  const removeCategory = (category: CategoryConfig) => {
+    const linkedQuestionCount = questions.filter((item) => item.categoryKey === category.stableKey).length;
+    if (linkedQuestionCount > 0 && !window.confirm(
+      `Delete “${category.name}” and its ${linkedQuestionCount} linked question${linkedQuestionCount > 1 ? "s" : ""}?`,
+    )) return;
+    setCategories((items) => items.filter((item) => item.stableKey !== category.stableKey));
+    setQuestions((items) => items.filter((item) => item.categoryKey !== category.stableKey));
+  };
   const save = () => {
     const errors = validateQuestionnaire(categories, questions);
     if (errors.length) return setMessage(errors.join(" "));
@@ -83,11 +91,12 @@ export function QuestionnaireSettings({
     <div className="config-notice">Changes are applied only to future imports. Existing imports and their results will not be modified.</div>
     {active.legacyAutoDetect && <div className="config-notice legacy">The initial version uses the historical automatic column detection. Saving creates the first explicit questionnaire.</div>}
     <section className="card config-section">
-      <div className="config-heading"><div><h2>Categories</h2><p>Deactivate categories instead of deleting historical definitions.</p></div><button className="outline" onClick={addCategory}><Plus size={16}/> Add category</button></div>
+      <div className="config-heading"><div><h2>Categories</h2><p>Deleting a category also removes its linked questions from the next version.</p></div><button className="outline" onClick={addCategory}><Plus size={16}/> Add category</button></div>
       <div className="config-list">{categories.map((item, index) => <div className="config-category" key={`${item.stableKey}-${index}`}>
         <label>Name<input value={item.name} onChange={(e) => updateCategory(index, { name: e.target.value })}/></label>
         <label>Description<input value={item.description ?? ""} onChange={(e) => updateCategory(index, { description: e.target.value })}/></label>
         <label className="check"><input type="checkbox" checked={item.active} onChange={(e) => updateCategory(index, { active: e.target.checked })}/> Active</label>
+        <button className="icon danger" title="Remove from the next version" onClick={() => removeCategory(item)}><Trash2 size={16}/></button>
       </div>)}</div>
       <div className="config-add-question"><button className="outline" onClick={addCategory}><Plus size={16}/> Add category</button></div>
     </section>
