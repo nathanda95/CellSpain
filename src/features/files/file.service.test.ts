@@ -53,6 +53,29 @@ describe("configured imports", () => {
     expect(result.warnings).toEqual([]);
   });
 
+  it("accepts an Excel column reference as the configured source column", async () => {
+    const config = configuredVersion();
+    config.categories.push({ stableKey: "test", name: "Test", active: true });
+    config.questions[0].sourceColumn = "B";
+    config.questions[0].categoryKey = "test";
+
+    const result = await parseWorkbook(
+      jsonFile([{
+        ID: "respondent-1",
+        "Would you say that your POM is accessible and attentive?": "great",
+      }]),
+      "import-excel-reference",
+      config,
+    );
+
+    expect(result.answers).toHaveLength(1);
+    expect(result.answers[0]).toMatchObject({
+      questionKey: "manager_trust",
+      category: "Test",
+      score: 4,
+    });
+  });
+
   it("blocks an import when a required column is absent", async () => {
     await expect(parseWorkbook(jsonFile([{ Unknown: "top" }]), "import-2", configuredVersion()))
       .rejects.toThrow("Missing required column: Manager trust");

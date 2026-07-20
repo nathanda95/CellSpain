@@ -46,6 +46,29 @@ const SYSTEM_QUESTION_COLUMN = /would you say that your overall situation is imp
 const normalizedColumn = (value: string) =>
   value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
+const excelColumnIndex = (value: string): number | undefined => {
+  const reference = value.trim().toUpperCase();
+  if (!/^[A-Z]+$/.test(reference)) return undefined;
+
+  const oneBasedIndex = [...reference].reduce(
+    (index, letter) => index * 26 + letter.charCodeAt(0) - 64,
+    0,
+  );
+  return oneBasedIndex - 1;
+};
+
+const resolvedSourceColumn = (
+  sourceColumn: string,
+  headers: string[],
+  headerByNormalizedName: Map<string, string>,
+) => {
+  const namedHeader = headerByNormalizedName.get(normalizedColumn(sourceColumn));
+  if (namedHeader) return namedHeader;
+
+  const columnIndex = excelColumnIndex(sourceColumn);
+  return columnIndex === undefined ? sourceColumn : headers[columnIndex] ?? sourceColumn;
+};
+
 function categoryKeyFromName(configuration: QuestionnaireConfig, name: string) {
   return configuration.categories.find((item) => item.name === name)?.stableKey ?? "";
 }
@@ -97,10 +120,13 @@ function effectiveQuestions(headers: string[], configuration: QuestionnaireConfi
     .map((item) => ({
       ...item,
       // Use the actual workbook header when it differs only in formatting so
-      // row lookup succeeds without weakening the configured questionnaire.
-      sourceColumn:
-        headerByNormalizedName.get(normalizedColumn(item.sourceColumn)) ??
+      // row lookup succeeds. Excel references such as U, V or AA are also
+      // resolved to the header at that position.
+      sourceColumn: resolvedSourceColumn(
         item.sourceColumn,
+        headers,
+        headerByNormalizedName,
+      ),
     }));
   const explicitColumns = new Set(
     explicit.map((item) => normalizedColumn(item.sourceColumn)),
