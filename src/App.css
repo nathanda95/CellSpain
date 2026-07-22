@@ -127,6 +127,32 @@ main {
 .metric small {
   color: #497bd9;
 }
+.metric .metric-variation {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 0;
+  background: none;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
+}
+.metric .metric-variation span {
+  color: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+.metric .metric-variation.positive {
+  color: #08785c;
+}
+.metric .metric-variation.negative {
+  color: #bd3038;
+}
+.metric .metric-variation.neutral {
+  color: #65697a;
+}
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;

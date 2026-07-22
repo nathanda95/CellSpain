@@ -76,14 +76,22 @@ const Metric = ({
   label,
   value,
   sub,
+  variation,
 }: {
   label: string;
   value?: string;
   sub?: string;
+  variation?: number;
 }) => (
   <section className="metric">
     <span>{label}</span>
     <strong>{value ?? "Data unavailable"}</strong>
+    {variation != null && (
+      <small className={`metric-variation ${variation > 0 ? "positive" : variation < 0 ? "negative" : "neutral"}`}>
+        <span aria-hidden="true">{variation > 0 ? "↗" : variation < 0 ? "↘" : "→"}</span>
+        {variation > 0 ? "+" : ""}{variation.toFixed(1)}% vs previous period
+      </small>
+    )}
     {sub && <small>{sub}</small>}
   </section>
 );
@@ -272,6 +280,25 @@ function App() {
         },
       );
     });
+  const comparisonPeriodNames = periods.slice(-2).map((item) => String(item.name));
+  const metricVariation = (calculator: (periodScores: number[]) => number | undefined) => {
+    if (comparisonPeriodNames.length < 2) return undefined;
+    const [previousPeriodName, currentPeriodName] = comparisonPeriodNames;
+    const previousValue = calculator(
+      filteredAnswers
+        .filter((answer) => period(answer.date) === previousPeriodName)
+        .map((answer) => answer.score),
+    );
+    const currentValue = calculator(
+      filteredAnswers
+        .filter((answer) => period(answer.date) === currentPeriodName)
+        .map((answer) => answer.score),
+    );
+    if (previousValue == null || currentValue == null || previousValue === 0) return undefined;
+    return ((currentValue - previousValue) / previousValue) * 100;
+  };
+  const averageVariation = metricVariation(average);
+  const medianVariation = metricVariation(median);
   const matchingVerbatims = filteredVerbatims.filter(
     (verbatim) =>
       (sentiment === "All" || verbatim.sentiment === sentiment) &&
@@ -345,11 +372,14 @@ function App() {
                   <Metric
                     label="Overall average"
                     value={`${averageScore!.toFixed(1)}/4`}
-                    sub="Numeric scores use the source 1–4 scale"
+                    variation={averageVariation}
+                    sub={averageVariation == null ? "Previous period unavailable" : undefined}
                   />
                   <Metric
                     label="Overall median"
                     value={`${medianScore!.toFixed(1)}/4`}
+                    variation={medianVariation}
+                    sub={medianVariation == null ? "Previous period unavailable" : undefined}
                   />
                   <Metric
                     label="Verbatims detected"
