@@ -102,6 +102,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [sentiment, setSentiment] = useState("All");
   const [category, setCategory] = useState("All");
+  const [verbatimStatus, setVerbatimStatus] = useState("All");
   const [periodMode, setPeriodMode] = useState<PeriodMode>("All");
   const [periodMonth, setPeriodMonth] = useState("");
   const [periodYear, setPeriodYear] = useState("");
@@ -275,6 +276,7 @@ function App() {
     (verbatim) =>
       (sentiment === "All" || verbatim.sentiment === sentiment) &&
       (category === "All" || verbatim.category === category) &&
+      (verbatimStatus === "All" || (verbatim.status ?? "New") === verbatimStatus) &&
       `${verbatim.content} ${verbatim.question}`
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -422,6 +424,11 @@ function App() {
                     value={category}
                     onChange={setCategory}
                     options={["All", ...categories]}
+                  />
+                  <Select
+                    value={verbatimStatus}
+                    onChange={setVerbatimStatus}
+                    options={["All", "New", "To review", "Done", "Ignored"]}
                   />
                   <DateFilters
                     mode={periodMode}
@@ -729,7 +736,7 @@ const SeniorityAverageCard = ({
 
   return (
     <section className="card service-card">
-      <h2>Average by length of service</h2>
+      <h2>Average by Years @ co</h2>
       {values.length ? (
         <div className="service-chart-body">
           <div className="service-y-axis" aria-hidden="true">
@@ -762,9 +769,9 @@ const SeniorityTrendCard = ({ answers }: { answers: Answer[] }) => {
   const allSeniorities = [
     ...new Set(answers.map((answer) => answer.seniority).filter(Boolean)),
   ] as string[];
-  const [selectedSeniority, setSelectedSeniority] = useState("All seniorities");
+  const [selectedSeniority, setSelectedSeniority] = useState("All years @ co");
   const seniorityAnswers =
-    selectedSeniority === "All seniorities"
+    selectedSeniority === "All years @ co"
       ? answers
       : answers.filter((answer) => answer.seniority === selectedSeniority);
   const categories = [
@@ -801,22 +808,22 @@ const SeniorityTrendCard = ({ answers }: { answers: Answer[] }) => {
 
   useEffect(() => {
     if (
-      selectedSeniority !== "All seniorities" &&
+      selectedSeniority !== "All years @ co" &&
       !allSeniorities.includes(selectedSeniority)
     ) {
-      setSelectedSeniority("All seniorities");
+      setSelectedSeniority("All years @ co");
     }
   }, [allSeniorities, selectedSeniority]);
 
   return (
     <ChartCard
-      title="Ratings trend by category and length of service"
+      title="Ratings trend by category and Years @ co"
       values={values}
       series={series}
       secondaryFilter={{
-        label: "Length of service",
+        label: "Years @ co",
         value: selectedSeniority,
-        options: ["All seniorities", ...allSeniorities],
+        options: ["All years @ co", ...allSeniorities],
         onChange: setSelectedSeniority,
       }}
     />
@@ -1212,9 +1219,14 @@ const VerbatimCard = ({
       <span>
         <MessageSquareText size={18} /> {item.role || "Anonymous respondent"}
       </span>
-      {item.sentiment && (
-        <em className={item.sentiment.toLowerCase()}>{item.sentiment}</em>
-      )}
+      <div className="verbatim-badges">
+        {item.sentiment && (
+          <em className={item.sentiment.toLowerCase()}>{item.sentiment}</em>
+        )}
+        <span className={`verbatim-status status-${(item.status ?? "New").toLowerCase().replace(/\s+/g, "-")}`}>
+          {item.status ?? "New"}
+        </span>
+      </div>
     </div>
     <p>“{item.content}”</p>
     <footer>
