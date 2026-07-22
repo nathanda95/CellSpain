@@ -1111,6 +1111,19 @@ const RadarCard = ({
         )?.score,
       }))
       .filter((item) => item.current != null || item.previous != null) ?? [];
+  const visibleScores = values.flatMap((item) =>
+    [item.current, item.previous].filter(
+      (score): score is number => typeof score === "number",
+    ),
+  );
+  const lowestScore = visibleScores.length ? Math.min(...visibleScores) : 0;
+  const highestScore = visibleScores.length ? Math.max(...visibleScores) : 4;
+  const scoreRange = highestScore - lowestScore;
+  const scalePadding = scoreRange === 0 ? 0.2 : Math.max(scoreRange * 0.12, 0.1);
+  const radarDomain: [number, number] = [
+    Math.max(0, Math.floor((lowestScore - scalePadding) * 10) / 10),
+    Math.min(4, Math.ceil((highestScore + scalePadding) * 10) / 10),
+  ];
 
   const changePeriod = (nextIndex: number) => {
     const nextPeriod = periods[nextIndex];
@@ -1131,9 +1144,10 @@ const RadarCard = ({
               />
               <PolarRadiusAxis
                 angle={90}
-                domain={[0, 4]}
+                domain={radarDomain}
                 tickCount={5}
                 tick={{ fill: "#777b8e", fontSize: 11 }}
+                tickFormatter={(value) => Number(value).toFixed(1)}
               />
               <Tooltip
                 formatter={(value, name) => [
