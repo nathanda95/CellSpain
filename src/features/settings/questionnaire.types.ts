@@ -13,7 +13,6 @@ export type QuestionConfig = {
   sourceColumn: string;
   categoryKey: string;
   responseType: ResponseType;
-  required: boolean;
   active: boolean;
   scoreMapping?: Record<string, number>;
 };

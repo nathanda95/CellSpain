@@ -85,7 +85,6 @@ function builtInQuestion(
       sourceColumn: header,
       categoryKey: "",
       responseType: "verbatim",
-      required: false,
       active: true,
     };
   }
@@ -96,7 +95,6 @@ function builtInQuestion(
       sourceColumn: header,
       categoryKey: categoryKeyFromName(configuration, category),
       responseType: "rating",
-      required: false,
       active: true,
       scoreMapping: DEFAULT_SCORE_MAPPING,
     };
@@ -116,7 +114,9 @@ function effectiveQuestions(headers: string[], configuration: QuestionnaireConfi
     headers.map((header) => [normalizedColumn(header), header]),
   );
   const explicit = configuration.questions
-    .filter((item) => item.active)
+    .filter((item) => item.active && configuration.categories.some(
+      (category) => category.active && category.stableKey === item.categoryKey,
+    ))
     .map((item) => ({
       ...item,
       // Use the actual workbook header when it differs only in formatting so
@@ -128,13 +128,22 @@ function effectiveQuestions(headers: string[], configuration: QuestionnaireConfi
         headerByNormalizedName,
       ),
     }));
+  // Every explicitly configured column is reserved, including inactive ones,
+  // so automatic detection cannot silently reactivate a disabled question.
   const explicitColumns = new Set(
-    explicit.map((item) => normalizedColumn(item.sourceColumn)),
+    configuration.questions.map((item) => normalizedColumn(resolvedSourceColumn(
+      item.sourceColumn,
+      headers,
+      headerByNormalizedName,
+    ))),
   );
   const builtIns = headers
     .filter((header) => !explicitColumns.has(normalizedColumn(header)))
     .map((header) => builtInQuestion(header, configuration))
-    .filter((item): item is QuestionConfig => Boolean(item));
+    .filter((item): item is QuestionConfig => Boolean(item))
+    .filter((item) => !item.categoryKey || configuration.categories.some(
+      (category) => category.active && category.stableKey === item.categoryKey,
+    ));
   return [...explicit, ...builtIns];
 }
 
@@ -156,12 +165,6 @@ export async function parseWorkbook(
 
     const headers = sheet.rows[0] ? Object.keys(sheet.rows[0]) : [];
     const configured = effectiveQuestions(headers, configuration);
-    const missing = configured.filter(
-      (question) => question.required && !headers.includes(question.sourceColumn),
-    );
-    if (missing.length) {
-      throw new Error(`Missing required column${missing.length > 1 ? "s" : ""}: ${missing.map((item) => item.sourceColumn).join(", ")}`);
-    }
     if (!configuration.legacyAutoDetect) {
       const known = new Set(
         configured.map((item) => normalizedColumn(item.sourceColumn)),
@@ -281,7 +284,6 @@ function readAnswers(
         sourceColumn,
         categoryKey: "",
         responseType: "rating",
-        required: false,
         active: true,
       }))
     : effectiveQuestions(headers, configuration).filter((item) => item.responseType === "rating");

@@ -42,7 +42,7 @@ export function QuestionnaireSettings({
   ]);
   const addQuestion = () => setQuestions((items) => [
     ...items,
-    { stableKey: nextStableKey("question", items.map((item) => item.stableKey)), label: "New question", sourceColumn: "", categoryKey: categories[0]?.stableKey ?? "", responseType: "rating", required: false, active: true, scoreMapping: { ...DEFAULT_SCORE_MAPPING } },
+    { stableKey: nextStableKey("question", items.map((item) => item.stableKey)), label: "New question", sourceColumn: "", categoryKey: categories.find((item) => item.active)?.stableKey ?? categories[0]?.stableKey ?? "", responseType: "rating", active: true, scoreMapping: { ...DEFAULT_SCORE_MAPPING } },
   ]);
   const removeCategory = (category: CategoryConfig) => {
     const linkedQuestionCount = questions.filter((item) => item.categoryKey === category.stableKey).length;
@@ -106,9 +106,9 @@ export function QuestionnaireSettings({
         <div className="question-fields">
           <label>Display label<input value={item.label} onChange={(e) => updateQuestion(index, { label: e.target.value })}/></label>
           <label>Expected file column<input value={item.sourceColumn} onChange={(e) => updateQuestion(index, { sourceColumn: e.target.value })}/></label>
-          <label>Category<select value={item.categoryKey} onChange={(e) => updateQuestion(index, { categoryKey: e.target.value })}>{categories.map((category) => <option value={category.stableKey} key={category.stableKey}>{category.name}</option>)}</select></label>
+          <label>Category<select value={item.categoryKey} onChange={(e) => updateQuestion(index, { categoryKey: e.target.value })}>{categories.map((category) => <option value={category.stableKey} key={category.stableKey}>{category.name}{category.active ? "" : " (inactive)"}</option>)}</select></label>
           <label>Response type<select value={item.responseType} onChange={(e) => updateQuestion(index, { responseType: e.target.value as ResponseType })}><option value="rating">Rating</option><option value="verbatim">Free text / verbatim</option></select></label>
-          <div className="question-flags"><label className="check"><input type="checkbox" checked={item.required} onChange={(e) => updateQuestion(index, { required: e.target.checked })}/> Required</label><label className="check"><input type="checkbox" checked={item.active} onChange={(e) => updateQuestion(index, { active: e.target.checked })}/> Active</label></div>
+          <div className="question-flags"><label className="check"><input type="checkbox" checked={item.active} onChange={(e) => updateQuestion(index, { active: e.target.checked })}/> Active</label></div>
         </div>
         <button className="icon danger" title="Remove from the next version" onClick={() => setQuestions((items) => items.filter((_, i) => i !== index))}><Trash2 size={16}/></button>
       </article>)}</div>

@@ -3,7 +3,7 @@ import { parseWorkbook } from "./file.service";
 import { createQuestionnaireVersion } from "../settings/questionnaire.service";
 import { createInitialQuestionnaire, DEFAULT_SCORE_MAPPING, type QuestionConfig } from "../settings/questionnaire.types";
 
-const configuredVersion = (required = true) => {
+const configuredVersion = () => {
   const initial = createInitialQuestionnaire();
   const question: QuestionConfig = {
     stableKey: "manager_trust",
@@ -11,7 +11,6 @@ const configuredVersion = (required = true) => {
     sourceColumn: "Manager trust",
     categoryKey: "pom",
     responseType: "rating",
-    required,
     active: true,
     scoreMapping: DEFAULT_SCORE_MAPPING,
   };
@@ -76,9 +75,17 @@ describe("configured imports", () => {
     });
   });
 
-  it("blocks an import when a required column is absent", async () => {
-    await expect(parseWorkbook(jsonFile([{ Unknown: "top" }]), "import-2", configuredVersion()))
-      .rejects.toThrow("Missing required column: Manager trust");
+  it("does not block an import when a configured column is absent", async () => {
+    const result = await parseWorkbook(jsonFile([{ Unknown: "top" }]), "import-2", configuredVersion());
+    expect(result.answers).toEqual([]);
+    expect(result.warnings[0]).toContain("Unknown");
+  });
+
+  it("ignores questions assigned to an inactive category", async () => {
+    const config = configuredVersion();
+    config.categories.find((category) => category.stableKey === "pom")!.active = false;
+    const result = await parseWorkbook(jsonFile([{ "Manager trust": "top!" }]), "import-inactive", config);
+    expect(result.answers).toEqual([]);
   });
 
   it("warns without blocking for unknown columns", async () => {
@@ -116,7 +123,7 @@ describe("configured imports", () => {
       "Would you like to be contacted by HR to discuss further?",
       "Who are you? ", "Survey quarter", "Test respondent ID",
     ];
-    const config = configuredVersion(false);
+    const config = configuredVersion();
     const row = Object.fromEntries(standardColumns.map((column) => [column, ""]));
     const result = await parseWorkbook(jsonFile([row]), "import-standard", config);
     expect(result.warnings).toEqual([]);

@@ -18,7 +18,9 @@ export function validateQuestionnaire(
   const categoryKeys = categories.map((item) => normalized(item.stableKey));
   const questionKeys = questions.map((item) => normalized(item.stableKey));
   const activeColumns = questions
-    .filter((item) => item.active)
+    .filter((item) => item.active && categories.some(
+      (category) => category.active && normalized(category.stableKey) === normalized(item.categoryKey),
+    ))
     .map((item) => normalized(item.sourceColumn));
 
   if (categories.some((item) => !item.stableKey.trim() || !item.name.trim()))
@@ -96,13 +98,20 @@ export function importQuestionnaire(
     typeof item.label !== "string" || typeof item.sourceColumn !== "string" ||
     typeof item.categoryKey !== "string" ||
     !["rating", "verbatim"].includes(String(item.responseType)) ||
-    typeof item.required !== "boolean" || typeof item.active !== "boolean");
+    typeof item.active !== "boolean");
   if (hasInvalidCategory || hasInvalidQuestion)
     throw new Error("The configuration contains invalid categories or questions.");
 
-  const errors = validateQuestionnaire(categories, questions);
+  // Older exports may still contain the removed `required` property. It is
+  // intentionally ignored so those files remain importable.
+  const normalizedQuestions = questions.map((item) => {
+    const normalizedQuestion = { ...item } as QuestionConfig & { required?: boolean };
+    delete normalizedQuestion.required;
+    return normalizedQuestion;
+  });
+  const errors = validateQuestionnaire(categories, normalizedQuestions);
   if (errors.length) throw new Error(errors.join(" "));
-  const next = createQuestionnaireVersion(previous, categories, questions);
+  const next = createQuestionnaireVersion(previous, categories, normalizedQuestions);
   next.legacyAutoDetect = value.legacyAutoDetect === true;
   return next;
 }

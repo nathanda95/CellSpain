@@ -8,7 +8,6 @@ const question = (categoryKey = "work_environment"): QuestionConfig => ({
   sourceColumn: "How is the atmosphere?",
   categoryKey,
   responseType: "rating",
-  required: true,
   active: true,
   scoreMapping: DEFAULT_SCORE_MAPPING,
 });

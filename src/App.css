@@ -298,7 +298,7 @@ main {
 .seniority b {
   position: absolute;
   bottom: 30px;
-  color: white;
+  color: #000;
 }
 .quotes {
   margin-top: 36px;
