@@ -25,7 +25,7 @@ header {
 .brand {
   font-size: 21px;
   font-weight: 700;
-  color: #4847dc;
+  color: #00003D;
 }
 nav {
   display: flex;
@@ -45,8 +45,8 @@ nav button {
   cursor: pointer;
 }
 nav button.active {
-  color: #4847dc;
-  border-color: #4847dc;
+  color: #00003D;
+  border-color: #00003D;
 }
 .header-tools {
   margin-left: auto;
@@ -79,7 +79,7 @@ main {
 .primary,
 .outline {
   border: 0;
-  background: #4847dc;
+  background: #00003D;
   color: #fff;
   border-radius: 6px;
   padding: 10px 15px;
@@ -92,7 +92,7 @@ main {
 }
 .outline {
   border: 1px solid #c9cbdf;
-  color: #4847dc;
+  color: #00003D;
   background: transparent;
 }
 .metrics {
