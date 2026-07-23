@@ -1,36 +1,70 @@
-import type { Answer } from "../files/file.types";
-import type { Verbatim } from "../feedback/feedback.types";
-import { average, median, period, periodOrder } from "../feedback/feedback.store";
-import { isWithinDateRange } from "../settings/settings.store";
-import type { DashboardAnalytics, RadarPeriod, TrendPoint, TrendSeries } from "./dashboard.types";
-
-export type DateBounds = { from: string; to: string };
+import type { Answer, Verbatim } from "../../domain/survey.types";
+import { isWithinDateRange, type DateBounds } from "../../shared/dates/date-range";
+import { quarterLabel, quarterOrder } from "../../shared/dates/quarter";
+import { average, median } from "../../shared/statistics/statistics";
+import type {
+  DashboardAnalytics,
+  RadarPeriod,
+  TrendPoint,
+  TrendSeries,
+} from "./dashboard.types";
 
 const unique = <T,>(values: T[]) => [...new Set(values)];
 
+const scoresBy = (
+  answers: Answer[],
+  keyOf: (answer: Answer) => string | undefined,
+) => {
+  const groups = new Map<string, number[]>();
+  for (const answer of answers) {
+    const key = keyOf(answer);
+    if (!key) continue;
+    const scores = groups.get(key) ?? [];
+    scores.push(answer.score);
+    groups.set(key, scores);
+  }
+  return groups;
+};
+
+const answersByQuarter = (answers: Answer[]) => {
+  const groups = new Map<string, Answer[]>();
+  for (const answer of answers) {
+    const quarter = quarterLabel(answer.date);
+    if (quarter === "Undated") continue;
+    const group = groups.get(quarter) ?? [];
+    group.push(answer);
+    groups.set(quarter, group);
+  }
+  return groups;
+};
+
+const chronologicalQuarters = (groups: Map<string, unknown>) =>
+  [...groups.keys()].sort((left, right) => quarterOrder(left) - quarterOrder(right));
+
 export function filterAnswersByPeriod(answers: Answer[], bounds: DateBounds) {
-  return answers.filter((answer) => isWithinDateRange(answer.date, bounds.from, bounds.to));
+  return answers.filter((answer) =>
+    isWithinDateRange(answer.date, bounds.from, bounds.to),
+  );
 }
 
-export function buildTrendData(answers: Answer[], keyPrefix = "category"): {
-  series: TrendSeries[];
-  periods: TrendPoint[];
-} {
+export function buildTrendData(
+  answers: Answer[],
+  keyPrefix = "category",
+): { series: TrendSeries[]; periods: TrendPoint[] } {
   const categories = unique(answers.map((answer) => answer.category));
-  const series = categories.map((name, index) => ({ key: `${keyPrefix}-${index}`, name }));
-  const periodNames = unique(answers.map((answer) => period(answer.date)))
-    .filter((name) => name !== "Undated")
-    .sort((left, right) => periodOrder(left) - periodOrder(right));
+  const series = categories.map((name, index) => ({
+    key: `${keyPrefix}-${index}`,
+    name,
+  }));
+  const groupedByQuarter = answersByQuarter(answers);
 
-  const periods = periodNames.map((name) => {
-    const periodAnswers = answers.filter((answer) => period(answer.date) === name);
+  const periods = chronologicalQuarters(groupedByQuarter).map((name) => {
+    const periodAnswers = groupedByQuarter.get(name) ?? [];
+    const categoryScores = scoresBy(periodAnswers, (answer) => answer.category);
+
     return series.reduce<TrendPoint>(
       (point, item) => {
-        point[item.key] = average(
-          periodAnswers
-            .filter((answer) => answer.category === item.name)
-            .map((answer) => answer.score),
-        );
+        point[item.key] = average(categoryScores.get(item.name) ?? []);
         return point;
       },
       { name, overall: average(periodAnswers.map((answer) => answer.score)) },
@@ -41,24 +75,22 @@ export function buildTrendData(answers: Answer[], keyPrefix = "category"): {
 }
 
 export function buildRadarPeriods(answers: Answer[]): RadarPeriod[] {
-  const periodNames = unique(answers.map((answer) => period(answer.date)))
-    .filter((name) => name !== "Undated")
-    .sort((left, right) => periodOrder(left) - periodOrder(right));
   const categories = unique(answers.map((answer) => answer.category));
+  const groupedByQuarter = answersByQuarter(answers);
 
-  return periodNames.map((name) => ({
-    name,
-    values: categories.map((category) => ({
-      category,
-      score: average(
-        answers
-          .filter(
-            (answer) => period(answer.date) === name && answer.category === category,
-          )
-          .map((answer) => answer.score),
-      ),
-    })),
-  }));
+  return chronologicalQuarters(groupedByQuarter).map((name) => {
+    const categoryScores = scoresBy(
+      groupedByQuarter.get(name) ?? [],
+      (answer) => answer.category,
+    );
+    return {
+      name,
+      values: categories.map((category) => ({
+        category,
+        score: average(categoryScores.get(category) ?? []),
+      })),
+    };
+  });
 }
 
 export function metricVariation(
@@ -68,15 +100,16 @@ export function metricVariation(
 ) {
   if (periodNames.length < 2) return undefined;
   const [previousPeriodName, currentPeriodName] = periodNames.slice(-2);
+  const groupedByQuarter = answersByQuarter(answers);
   const valueFor = (periodName: string) =>
     calculator(
-      answers
-        .filter((answer) => period(answer.date) === periodName)
-        .map((answer) => answer.score),
+      (groupedByQuarter.get(periodName) ?? []).map((answer) => answer.score),
     );
   const previousValue = valueFor(previousPeriodName);
   const currentValue = valueFor(currentPeriodName);
-  if (previousValue == null || currentValue == null || previousValue === 0) return undefined;
+  if (previousValue == null || currentValue == null || previousValue === 0) {
+    return undefined;
+  }
   return ((currentValue - previousValue) / previousValue) * 100;
 }
 
@@ -86,46 +119,40 @@ export function buildDashboardAnalytics(
   bounds: DateBounds,
 ): DashboardAnalytics {
   const filteredAnswers = filterAnswersByPeriod(answers, bounds);
-  const filteredVerbatimCount = verbatims.filter((verbatim) =>
-    isWithinDateRange(verbatim.date, bounds.from, bounds.to),
-  ).length;
   const scores = filteredAnswers.map((answer) => answer.score);
-  const categories = unique(filteredAnswers.map((answer) => answer.category));
-  const byCategory = categories
-    .map((name) => ({
-      name,
-      value: average(
-        filteredAnswers
-          .filter((answer) => answer.category === name)
-          .map((answer) => answer.score),
-      ) ?? 0,
-    }))
-    .filter((categoryScore) => categoryScore.value);
-  const seniorities = unique(
-    filteredAnswers.map((answer) => answer.seniority).filter((value): value is string => Boolean(value)),
-  );
-  const seniorityAverages = seniorities.map((name) => ({
-    name,
-    value:
-      average(
-        filteredAnswers
-          .filter((answer) => answer.seniority === name)
-          .map((answer) => answer.score),
-      ) ?? 0,
-  }));
+  const categoryScores = scoresBy(filteredAnswers, (answer) => answer.category);
+  const seniorityScores = scoresBy(filteredAnswers, (answer) => answer.seniority);
   const trend = buildTrendData(filteredAnswers);
   const comparisonPeriodNames = trend.periods.map((item) => String(item.name));
 
   return {
     filteredAnswers,
-    filteredVerbatimCount,
+    filteredVerbatimCount: verbatims.filter((verbatim) =>
+      isWithinDateRange(verbatim.date, bounds.from, bounds.to),
+    ).length,
     scores,
     averageScore: average(scores),
     medianScore: median(scores),
-    averageVariation: metricVariation(filteredAnswers, comparisonPeriodNames, average),
-    medianVariation: metricVariation(filteredAnswers, comparisonPeriodNames, median),
-    byCategory,
-    seniorityAverages,
+    averageVariation: metricVariation(
+      filteredAnswers,
+      comparisonPeriodNames,
+      average,
+    ),
+    medianVariation: metricVariation(
+      filteredAnswers,
+      comparisonPeriodNames,
+      median,
+    ),
+    byCategory: [...categoryScores.entries()]
+      .map(([name, categoryValues]) => ({
+        name,
+        value: average(categoryValues) ?? 0,
+      }))
+      .filter((categoryScore) => categoryScore.value),
+    seniorityAverages: [...seniorityScores.entries()].map(([name, values]) => ({
+      name,
+      value: average(values) ?? 0,
+    })),
     trendSeries: trend.series,
     periods: trend.periods,
     radarPeriods: buildRadarPeriods(answers),

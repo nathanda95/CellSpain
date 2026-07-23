@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import { AlertCircle, CheckCircle2, FileText, Trash2 } from "lucide-react";
-import type { ImportItem } from "../file.types";
+import type { ImportItem } from "../../../domain/dataset.types";
 import { dateLabel } from "../../../shared/utils/date";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 

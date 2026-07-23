@@ -1,5 +1,5 @@
-import type { Verbatim } from "./feedback.types";
-import { isWithinDateRange } from "../settings/settings.store";
+import type { Verbatim } from "../../domain/survey.types";
+import { isWithinDateRange } from "../../shared/dates/date-range";
 
 export type VerbatimFilters = {
   query: string;

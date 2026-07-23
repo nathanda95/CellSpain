@@ -1,20 +1,18 @@
-import type { Sentiment } from "./feedback.types";
+import type { Sentiment } from "./survey.types";
 
 export const legacyScoreMap: Record<string, number> = {
   "no way": 1,
-  "no": 1,
+  no: 1,
   meh: 2,
   bof: 2,
   ok: 3,
-  "Stable": 2,
+  stable: 2,
   great: 4,
   "top!": 4,
   top: 4,
-  "Yes!": 4,
+  "yes!": 4,
 };
 
-// Uniformise les libellés provenant de fichiers saisis manuellement afin que
-// les règles ci-dessous ne dépendent ni de la casse ni des espaces superflus.
 const normalize = (value: unknown) =>
   String(value ?? "")
     .toLowerCase()
@@ -24,7 +22,6 @@ export const mapAnswerToScore = (
   value: unknown,
   scoreMap: Record<string, number> = legacyScoreMap,
 ): number | null => {
-  // Les exports peuvent contenir soit une note 1–4, soit son libellé textuel.
   if (typeof value === "number" && value >= 1 && value <= 4) return value;
   const numeric = Number(String(value).trim());
   if (numeric >= 1 && numeric <= 4) return numeric;
@@ -41,8 +38,6 @@ export const scoreToSentiment = (score?: number): Sentiment | undefined =>
         : "Negative";
 
 export const categoryOf = (question: string) => {
-  // La V1 ne possède pas de référentiel de questions : la catégorie est donc
-  // déduite des mots-clés présents dans l'intitulé de la question.
   const normalized = normalize(question);
   if (/atmosphere|ambiance|work environment/.test(normalized))
     return "Work environment";
@@ -58,8 +53,6 @@ export const categoryOf = (question: string) => {
 };
 
 export const isComment = (header: string, value: unknown) => {
-  // Une réponse longue n'est considérée comme verbatim que si sa colonne est
-  // une question ouverte connue. Cela évite de prendre un rôle pour un commentaire.
   const content = String(value ?? "").trim();
   return (
     content.length >= 18 &&

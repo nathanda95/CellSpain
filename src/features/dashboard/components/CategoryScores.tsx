@@ -1,4 +1,4 @@
-import { areaScoreColor } from "../../feedback/feedback.store";
+import { areaScoreColor } from "../dashboard.utils";
 import type { CategoryScore } from "../dashboard.types";
 
 export function CategoryScores({ values }: { values: CategoryScore[] }) {

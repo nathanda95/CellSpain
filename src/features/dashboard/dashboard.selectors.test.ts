@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Answer } from "../files/file.types";
-import type { Verbatim } from "../feedback/feedback.types";
+import type { Answer } from "../../domain/survey.types";
+import type { Verbatim } from "../../domain/survey.types";
 import {
   buildDashboardAnalytics,
   buildRadarPeriods,

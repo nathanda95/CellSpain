@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { Answer } from "../features/files/file.types";
-import type { Verbatim } from "../features/feedback/feedback.types";
+import type { Answer } from "../domain/survey.types";
+import type { Verbatim } from "../domain/survey.types";
 import type { PeriodFilterActions, PeriodFilterState } from "../hooks/usePeriodFilter";
 import { buildDashboardAnalytics } from "../features/dashboard/dashboard.selectors";
 import { CategoryScores } from "../features/dashboard/components/CategoryScores";

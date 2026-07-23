@@ -2,8 +2,8 @@ import { useState } from "react";
 import "./App.css";
 import { AppHeader } from "./app/AppHeader";
 import type { Page } from "./app/app.types";
-import { activeQuestionnaire } from "./features/settings/questionnaire.service";
 import { useImports } from "./features/files/useImports";
+import { activeQuestionnaire } from "./features/settings/questionnaire.service";
 import { useDataset } from "./hooks/useDataset";
 import { usePeriodFilter } from "./hooks/usePeriodFilter";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -13,10 +13,10 @@ import { VerbatimsPage } from "./pages/VerbatimsPage";
 
 function App() {
   const [page, setPage] = useState<Page>("dashboard");
-  const { data, setData, updateVerbatim, activateQuestionnaire } = useDataset();
+  const dataset = useDataset();
   const periodFilter = usePeriodFilter();
-  const questionnaire = activeQuestionnaire(data.questionnaireVersions);
-  const { importFiles, removeImport } = useImports(questionnaire, setData);
+  const questionnaire = activeQuestionnaire(dataset.data.questionnaireVersions);
+  const imports = useImports(questionnaire, dataset);
 
   return (
     <div className="app">
@@ -24,8 +24,8 @@ function App() {
       <main>
         {page === "dashboard" && (
           <DashboardPage
-            answers={data.answers}
-            verbatims={data.verbatims}
+            answers={dataset.data.answers}
+            verbatims={dataset.data.verbatims}
             periodState={periodFilter.state}
             periodActions={periodFilter.actions}
             bounds={periodFilter.bounds}
@@ -34,19 +34,26 @@ function App() {
         )}
         {page === "verbatims" && (
           <VerbatimsPage
-            answers={data.answers}
-            verbatims={data.verbatims}
+            answers={dataset.data.answers}
+            verbatims={dataset.data.verbatims}
             periodState={periodFilter.state}
             periodActions={periodFilter.actions}
             bounds={periodFilter.bounds}
-            onUpdateVerbatim={updateVerbatim}
+            onUpdateVerbatim={dataset.updateVerbatim}
           />
         )}
         {page === "reports" && (
-          <ImportsPage imports={data.imports} onImport={importFiles} onRemove={removeImport} />
+          <ImportsPage
+            imports={dataset.data.imports}
+            onImport={imports.importFiles}
+            onRemove={imports.removeImport}
+          />
         )}
         {page === "settings" && (
-          <SettingsPage active={questionnaire} onSave={activateQuestionnaire} />
+          <SettingsPage
+            active={questionnaire}
+            onSave={dataset.activateQuestionnaire}
+          />
         )}
       </main>
     </div>

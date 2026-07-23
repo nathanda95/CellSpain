@@ -1,0 +1,58 @@
+.radar-card {
+  min-height: 340px;
+  color: #1c2332;
+}
+.radar-card .recharts-default-legend {
+  font-size: 12px;
+}
+.radar-period-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 34px;
+  color: #55586a;
+  font-size: 13px;
+}
+.radar-period-navigation button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8daea;
+  border-radius: 50%;
+  background: #fff;
+  color: #4847dc;
+  cursor: pointer;
+}
+.radar-period-navigation button:disabled {
+  color: #b8bac8;
+  background: #f5f5f8;
+  cursor: default;
+}
+.radar-period-previous {
+  color: #e0782f;
+}
+.radar-period-current {
+  color: #4847dc;
+}
+.radar-custom-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  font-size: 12px;
+}
+.radar-custom-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.radar-custom-legend i {
+  width: 15px;
+  height: 2px;
+  background: currentColor;
+}
+.categories {
+  margin-bottom: 24px;
+}

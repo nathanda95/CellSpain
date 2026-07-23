@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import type { Status, Verbatim } from "../feedback.types";
+import type { Status, Verbatim } from "../../../domain/survey.types";
 import { dateLabel } from "../../../shared/utils/date";
 import { Select } from "../../../shared/ui/Select";
 

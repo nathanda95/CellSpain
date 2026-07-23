@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import type { Answer } from "../features/files/file.types";
-import type { Verbatim } from "../features/feedback/feedback.types";
+import type { Answer } from "../domain/survey.types";
+import type { Verbatim } from "../domain/survey.types";
 import type { PeriodFilterActions, PeriodFilterState } from "../hooks/usePeriodFilter";
 import { filterVerbatims } from "../features/feedback/feedback.selectors";
 import {

@@ -1,4 +1,4 @@
-import type { ImportItem } from "../features/files/file.types";
+import type { ImportItem } from "../domain/dataset.types";
 import { ImportDropzone } from "../features/files/components/ImportDropzone";
 import { ImportHistory } from "../features/files/components/ImportHistory";
 

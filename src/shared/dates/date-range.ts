@@ -1,4 +1,5 @@
 export type PeriodMode = "All" | "Month" | "Year" | "Custom period";
+export type DateBounds = { from: string; to: string };
 
 const dateValue = (date?: string) => {
   const parsed = date && new Date(date);
@@ -13,8 +14,6 @@ export const isWithinDateRange = (
   from: string,
   to: string,
 ) => {
-  // Le format ISO YYYY-MM-DD peut être comparé alphabétiquement sans reconvertir
-  // chaque borne en timestamp.
   if (!from && !to) return true;
   const value = dateValue(date);
   return Boolean(value) && (!from || value >= from) && (!to || value <= to);
@@ -26,9 +25,7 @@ export const periodBounds = (
   year: string,
   from: string,
   to: string,
-) => {
-  // Tous les modes de l'interface sont ramenés à une même paire de dates. Le
-  // reste de l'application n'a ainsi pas besoin de connaître le filtre choisi.
+): DateBounds => {
   if (mode === "Month" && month) {
     const [yearValue, monthValue] = month.split("-").map(Number);
     const lastDay = new Date(yearValue, monthValue, 0).getDate();

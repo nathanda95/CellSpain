@@ -128,4 +128,36 @@ describe("configured imports", () => {
     const result = await parseWorkbook(jsonFile([row]), "import-standard", config);
     expect(result.warnings).toEqual([]);
   });
+  it("keeps each import bound to the questionnaire snapshot used at import time", async () => {
+    const versionA = configuredVersion();
+    const versionB = createQuestionnaireVersion(
+      versionA,
+      versionA.categories,
+      [{ ...versionA.questions[0], categoryKey: "missions" }],
+    );
+
+    const importedWithA = await parseWorkbook(
+      jsonFile([{ "Manager trust": "top!" }]),
+      "import-a",
+      versionA,
+    );
+    const importedWithB = await parseWorkbook(
+      jsonFile([{ "Manager trust": "top!" }]),
+      "import-b",
+      versionB,
+    );
+
+    expect(importedWithA.answers[0]).toMatchObject({
+      category: "POM",
+      configurationVersionId: versionA.id,
+      importId: "import-a",
+    });
+    expect(importedWithB.answers[0]).toMatchObject({
+      category: "Missions",
+      configurationVersionId: versionB.id,
+      importId: "import-b",
+    });
+    expect(importedWithA.answers[0].category).toBe("POM");
+  });
+
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Answer } from "../../files/file.types";
+import type { Answer } from "../../../domain/survey.types";
 import { buildTrendData } from "../dashboard.selectors";
 import { TrendChart } from "./TrendChart";
 

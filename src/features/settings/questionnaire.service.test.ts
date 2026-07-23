@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createQuestionnaireVersion, exportQuestionnaire, importQuestionnaire, resetQuestionnaire, validateQuestionnaire } from "./questionnaire.service";
+import { activeQuestionnaire, createQuestionnaireVersion, exportQuestionnaire, importQuestionnaire, resetQuestionnaire, validateQuestionnaire } from "./questionnaire.service";
 import { createInitialQuestionnaire, DEFAULT_SCORE_MAPPING, type QuestionConfig } from "./questionnaire.types";
 
 const question = (categoryKey = "work_environment"): QuestionConfig => ({
@@ -55,4 +55,11 @@ describe("questionnaire versioning", () => {
     expect(reset.legacyAutoDetect).toBe(true);
     expect(reset.categories.length).toBeGreaterThan(0);
   });
+  it("prefers the latest active version if legacy data contains multiple active flags", () => {
+    const initial = createInitialQuestionnaire();
+    const version2 = createQuestionnaireVersion(initial, initial.categories, []);
+    expect(activeQuestionnaire([{ ...initial, active: true }, { ...version2, active: true }])?.id)
+      .toBe(version2.id);
+  });
+
 });

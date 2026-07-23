@@ -1,4 +1,4 @@
-import type { Answer } from "../files/file.types";
+import type { Answer } from "../../domain/survey.types";
 
 export type CategoryScore = { name: string; value: number };
 export type SeniorityScore = { name: string; value: number };

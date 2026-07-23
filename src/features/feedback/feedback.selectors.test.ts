@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Verbatim } from "./feedback.types";
+import type { Verbatim } from "../../domain/survey.types";
 import { filterVerbatims } from "./feedback.selectors";
 
 const verbatims: Verbatim[] = [

@@ -1,6 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import type { PeriodFilterActions, PeriodFilterState } from "../../hooks/usePeriodFilter";
-import type { PeriodMode } from "../../features/settings/settings.store";
+import type { PeriodMode } from "../dates/date-range";
 import { Select } from "./Select";
 
 export function DateFilters({

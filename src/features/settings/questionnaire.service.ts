@@ -56,7 +56,7 @@ export function createQuestionnaireVersion(
 }
 
 export const activeQuestionnaire = (versions: QuestionnaireConfig[]) =>
-  versions.find((item) => item.active) ?? versions[versions.length - 1];
+  [...versions].reverse().find((item) => item.active) ?? versions[versions.length - 1];
 
 export const exportQuestionnaire = (configuration: QuestionnaireConfig) =>
   JSON.stringify({

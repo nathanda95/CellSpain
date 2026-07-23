@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { periodBounds, type PeriodMode } from "../features/settings/settings.store";
+import { periodBounds, type PeriodMode } from "../shared/dates/date-range";
 
 export type PeriodFilterState = {
   mode: PeriodMode;

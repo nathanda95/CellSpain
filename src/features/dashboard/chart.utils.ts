@@ -1,4 +1,4 @@
-import { average } from "../feedback/feedback.store";
+import { average } from "../../shared/statistics/statistics";
 import type { TrendPoint } from "./dashboard.types";
 
 export function calculateLinearTrend(values: TrendPoint[], seriesKey: string): TrendPoint[] {

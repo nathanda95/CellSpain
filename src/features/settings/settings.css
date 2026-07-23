@@ -1,0 +1,28 @@
+
+.settings-link { display: grid; place-items: center; padding: 5px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.settings-link:hover { background: #ececff; color: #4847dc; }
+.config-notice { margin-bottom: 14px; padding: 13px 16px; border: 1px solid #c8d3ff; border-radius: 8px; background: #f2f5ff; color: #33437a; }
+.config-notice.legacy { border-color: #f1d49b; background: #fff9ec; color: #765315; }
+.config-section { margin-bottom: 20px; }
+.config-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 16px; }
+.config-heading h2, .config-heading p { margin: 0 0 5px; }
+.config-list, .question-list { display: grid; gap: 12px; }
+.config-category { display: grid; grid-template-columns: 1fr 2fr auto auto; align-items: end; gap: 12px; padding: 12px; border: 1px solid #e2e3ed; border-radius: 8px; }
+.config-section label { display: grid; gap: 5px; color: #55586a; font-size: 12px; font-weight: 600; }
+.config-section input:not([type="checkbox"]), .config-section select, .config-section textarea { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid #d5d7e3; border-radius: 6px; background: #fff; color: #252837; font: inherit; }
+.config-section textarea { min-height: 110px; resize: vertical; font-family: ui-monospace, monospace; }
+.config-section .check { display: flex; grid-auto-flow: column; align-items: center; justify-content: start; gap: 7px; min-height: 38px; }
+.question-config { position: relative; padding: 15px 54px 15px 15px; border: 1px solid #dfe1ec; border-radius: 9px; background: #fafafe; }
+.question-config > .icon { position: absolute; top: 14px; right: 14px; }
+.question-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.question-flags { display: flex; align-items: end; gap: 18px; }
+.config-actions { display: flex; justify-content: flex-end; margin: 18px 0 36px; }
+.config-management-actions .danger-outline { color: #bd3038; border-color: #e7b8bd; }
+.config-management-actions .danger-outline:hover { background: #fff0f0; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.config-add-question { display: flex; justify-content: flex-start; margin-top: 16px; }
+.config-success, .config-error { padding: 12px 14px; border-radius: 7px; }
+.config-success { background: #e9f8ef; color: #217345; }
+.config-error { background: #fff0f0; color: #a52d35; }
+.import-warning td { padding-top: 0; color: #8a6119; font-size: 12px; }
+@media (max-width: 800px) { .config-category, .question-fields { grid-template-columns: 1fr; } .config-heading { flex-direction: column; } }

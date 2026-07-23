@@ -1,5 +1,5 @@
 import { Clock3, MessageSquareText } from "lucide-react";
-import type { Verbatim } from "../feedback.types";
+import type { Verbatim } from "../../../domain/survey.types";
 import { dateLabel } from "../../../shared/utils/date";
 
 export function VerbatimCard({

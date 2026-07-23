@@ -1,14 +1,24 @@
-import type { Dispatch, SetStateAction } from "react";
-import type { QuestionnaireConfig } from "../settings/questionnaire.types";
+import type { ImportItem } from "../../domain/dataset.types";
+import type { QuestionnaireConfig } from "../../domain/questionnaire.types";
+import type { Answer, Verbatim } from "../../domain/survey.types";
 import { createId } from "../../shared/utils/id";
-import { belongsToImport, parseWorkbook } from "./file.service";
-import type { Dataset, ImportItem } from "./file.types";
+import { parseWorkbook } from "./file.service";
+
+export type ImportDatasetActions = {
+  completeImport: (item: ImportItem, answers: Answer[], verbatims: Verbatim[]) => void;
+  failImport: (item: ImportItem) => void;
+  removeImport: (item: ImportItem) => void;
+};
 
 export function useImports(
   questionnaire: QuestionnaireConfig,
-  setData: Dispatch<SetStateAction<Dataset>>,
+  actions: ImportDatasetActions,
 ) {
   const importFiles = async (files: FileList | File[]) => {
+    // One user import action is bound to the questionnaire that was active when
+    // it started. A settings change during parsing cannot rebind these files.
+    const questionnaireSnapshot = structuredClone(questionnaire);
+
     for (const file of Array.from(files)) {
       const base: ImportItem = {
         id: createId(),
@@ -18,37 +28,27 @@ export function useImports(
         status: "Completed",
         rows: 0,
         verbatims: 0,
+        configurationVersionId: questionnaireSnapshot.id,
       };
 
       try {
-        const parsed = await parseWorkbook(file, base.id, questionnaire);
-        setData((current) => ({
-          ...current,
-          answers: [...current.answers, ...parsed.answers],
-          verbatims: [...current.verbatims, ...parsed.verbatims],
-          imports: [
-            {
-              ...base,
-              rows: parsed.rows,
-              verbatims: parsed.verbatims.length,
-              warnings: parsed.warnings,
-              configurationVersionId: questionnaire.id,
-            },
-            ...current.imports,
-          ],
-        }));
+        const parsed = await parseWorkbook(file, base.id, questionnaireSnapshot);
+        actions.completeImport(
+          {
+            ...base,
+            rows: parsed.rows,
+            verbatims: parsed.verbatims.length,
+            warnings: parsed.warnings,
+          },
+          parsed.answers,
+          parsed.verbatims,
+        );
       } catch (error) {
-        setData((current) => ({
-          ...current,
-          imports: [
-            {
-              ...base,
-              status: "Error",
-              error: error instanceof Error ? error.message : "Unreadable file",
-            },
-            ...current.imports,
-          ],
-        }));
+        actions.failImport({
+          ...base,
+          status: "Error",
+          error: error instanceof Error ? error.message : "Unreadable file",
+        });
       }
     }
   };
@@ -59,23 +59,7 @@ export function useImports(
         ? `Remove "${item.name}" and its imported data from this dashboard?`
         : `Remove "${item.name}" from the import history?`;
     if (!window.confirm(message)) return;
-
-    setData((current) => ({
-      ...current,
-      answers:
-        item.status === "Completed"
-          ? current.answers.filter(
-              (answer) => !belongsToImport(answer, item, current.imports),
-            )
-          : current.answers,
-      verbatims:
-        item.status === "Completed"
-          ? current.verbatims.filter(
-              (verbatim) => !belongsToImport(verbatim, item, current.imports),
-            )
-          : current.verbatims,
-      imports: current.imports.filter((existingImport) => existingImport.id !== item.id),
-    }));
+    actions.removeImport(item);
   };
 
   return { importFiles, removeImport };

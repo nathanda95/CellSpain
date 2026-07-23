@@ -1,35 +1,39 @@
-import { useEffect, useState } from "react";
-import type { Dataset } from "../features/files/file.types";
-import type { QuestionnaireConfig } from "../features/settings/questionnaire.types";
-import type { Verbatim } from "../features/feedback/feedback.types";
+import { useEffect, useReducer } from "react";
+import { datasetReducer } from "../domain/dataset.reducer";
+import type { ImportItem } from "../domain/dataset.types";
+import type { QuestionnaireConfig } from "../domain/questionnaire.types";
+import type { Answer, Verbatim } from "../domain/survey.types";
 import { loadDataset, saveDataset } from "../shared/db/database";
 
 export function useDataset() {
-  const [data, setData] = useState<Dataset>(loadDataset);
+  const [data, dispatch] = useReducer(datasetReducer, undefined, loadDataset);
 
   useEffect(() => saveDataset(data), [data]);
 
-  const updateVerbatim = (id: string, patch: Partial<Verbatim>) => {
-    setData((current) => ({
-      ...current,
-      verbatims: current.verbatims.map((verbatim) =>
-        verbatim.id === id ? { ...verbatim, ...patch } : verbatim,
-      ),
-    }));
-  };
+  const completeImport = (
+    item: ImportItem,
+    answers: Answer[],
+    verbatims: Verbatim[],
+  ) => dispatch({ type: "IMPORT_COMPLETED", item, answers, verbatims });
 
-  const activateQuestionnaire = (next: QuestionnaireConfig) => {
-    setData((current) => ({
-      ...current,
-      questionnaireVersions: [
-        ...current.questionnaireVersions.map((version) => ({
-          ...version,
-          active: false,
-        })),
-        next,
-      ],
-    }));
-  };
+  const failImport = (item: ImportItem) =>
+    dispatch({ type: "IMPORT_FAILED", item });
 
-  return { data, setData, updateVerbatim, activateQuestionnaire };
+  const removeImport = (item: ImportItem) =>
+    dispatch({ type: "IMPORT_REMOVED", item });
+
+  const updateVerbatim = (id: string, patch: Partial<Verbatim>) =>
+    dispatch({ type: "VERBATIM_UPDATED", id, patch });
+
+  const activateQuestionnaire = (questionnaire: QuestionnaireConfig) =>
+    dispatch({ type: "QUESTIONNAIRE_ACTIVATED", questionnaire });
+
+  return {
+    data,
+    completeImport,
+    failImport,
+    removeImport,
+    updateVerbatim,
+    activateQuestionnaire,
+  };
 }
