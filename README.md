@@ -2,139 +2,222 @@
 
 # 📊 CellSpain
 
-### Employee Feedback Analytics — Local, Flexible and Privacy-First
+### Local-first employee survey analytics for evolving questionnaires
 
-**CellSpain** is a local-first desktop application designed to transform employee survey exports into clear, actionable insights.
+**Import survey exports, analyze satisfaction trends, explore employee verbatims, and evolve the questionnaire without rewriting historical data.**
 
-Import survey data, analyze satisfaction trends, explore employee verbatims and adapt questionnaires over time — without sending survey data to an external server.
+<br />
+
+![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![Vitest](https://img.shields.io/badge/Tested%20with-Vitest-6E9F18?logo=vitest&logoColor=white)
+![Local First](https://img.shields.io/badge/Data-Local%20First-16A34A)
 
 </div>
 
 ---
 
-## 📚 Table of Contents
+## Overview
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [How It Works](#-how-it-works)
-- [Analytics Dashboard](#-analytics-dashboard)
-- [Verbatim Analysis](#-verbatim-analysis)
-- [Questionnaire Configuration](#️-questionnaire-configuration)
-- [Questionnaire Versioning](#-questionnaire-versioning)
-- [Import System](#-import-system)
-- [Architecture](#️-architecture)
-- [Privacy & Local-First Design](#-privacy--local-first-design)
-- [Tech Stack](#️-tech-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Development](#-development)
-- [Testing](#-testing)
-- [Typical Workflow](#-typical-workflow)
-- [Future Improvements](#-future-improvements)
-- [Author](#-author)
+**CellSpain** is a desktop application for analyzing employee satisfaction survey exports.
+
+It combines quantitative survey ratings with qualitative employee feedback in a single local application. Survey files can be imported, normalized, filtered by period, compared across quarters, and explored through dashboards and verbatim review tools.
+
+The project is built around one important business rule:
+
+> **A questionnaire may change between imports, but data that has already been imported must keep the meaning it had at import time.**
+
+CellSpain therefore versions questionnaire configurations and binds every import to a configuration snapshot. Renaming a question, moving it to another category, disabling it, or changing the questionnaire structure only affects **future imports**.
 
 ---
 
-# 🎯 Overview
+## Table of Contents
 
-Employee satisfaction surveys often generate large spreadsheets containing both:
-
-- quantitative ratings;
-- qualitative free-text feedback;
-- respondent metadata;
-- recurring survey periods.
-
-Manually processing these files can quickly become time-consuming, especially when the questionnaire evolves over time.
-
-**CellSpain** provides a desktop interface to centralize this workflow.
-
-The application can:
-
-- import employee survey files;
-- normalize satisfaction ratings;
-- calculate satisfaction indicators;
-- analyze trends over time;
-- group results by category;
-- extract and explore employee verbatims;
-- track the review status of comments;
-- configure questions and categories;
-- version questionnaire configurations;
-- preserve the interpretation of historical imports.
-
-The goal is to turn raw employee feedback into information that is easier to understand, compare and act upon.
+- [Why CellSpain?](#why-cellspain)
+- [Key Features](#key-features)
+- [Core Business Rule: Historical Stability](#core-business-rule-historical-stability)
+- [How Data Flows Through the App](#how-data-flows-through-the-app)
+- [Dashboard & Analytics](#dashboard--analytics)
+- [Verbatim Explorer](#verbatim-explorer)
+- [Questionnaire Configuration](#questionnaire-configuration)
+- [Import System](#import-system)
+- [Architecture](#architecture)
+- [Local Persistence & Privacy](#local-persistence--privacy)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Development](#development)
+- [Testing](#testing)
+- [Design Principles](#design-principles)
+- [Possible Next Steps](#possible-next-steps)
+- [Author](#author)
 
 ---
 
-# ✨ Key Features
+# Why CellSpain?
 
-## 📊 Satisfaction Analytics
+Employee survey exports are rarely static forever.
 
-CellSpain automatically transforms survey ratings into measurable indicators.
+Over time:
 
-The dashboard provides:
+- questions are added or removed;
+- wording changes;
+- categories evolve;
+- spreadsheet columns move;
+- new free-text fields appear;
+- old historical data still needs to remain comparable.
+
+A hard-coded import pipeline quickly becomes fragile.
+
+CellSpain solves this by separating:
+
+1. **the questionnaire definition**;
+2. **the imported historical data**;
+3. **the analytics computed from that historical snapshot**.
+
+This makes the application more resilient to future survey changes while protecting previous imports from retroactive reinterpretation.
+
+---
+
+# Key Features
+
+## 📥 Multi-format survey imports
+
+Import survey responses from:
+
+```text
+.xlsx
+.csv
+.json
+```
+
+Files can be added through:
+
+- drag & drop;
+- the native file picker.
+
+For each import, CellSpain records metadata such as:
+
+- file name;
+- import date;
+- file size;
+- number of processed rows;
+- number of detected verbatims;
+- status;
+- warnings;
+- questionnaire configuration version.
+
+Failed imports are also retained in the history so errors remain understandable instead of disappearing silently.
+
+---
+
+## 📊 Satisfaction analytics
+
+The dashboard calculates analytics directly from imported answers.
+
+Available views include:
 
 - overall average score;
 - median score;
-- comparison with the previous available period;
+- variation against the previous available quarter;
 - average score by category;
 - average score by employee seniority;
-- category evolution over time;
-- overall satisfaction trends;
-- period-to-period comparisons;
-- radar-based category comparisons.
+- satisfaction evolution over time;
+- category-level trend lines;
+- seniority-specific trends;
+- radar comparison between consecutive periods.
 
-Survey responses are normalized onto a common **1–4 scale**.
+Scores are represented on a **1–4 scale**.
 
-For example:
+The legacy mapping supports values such as:
 
-| Survey Answer | Score |
+| Survey value | Score |
 |---|---:|
-| `No way` | 1 |
+| `No way` / `No` | 1 |
 | `Meh` / `Bof` | 2 |
 | `OK` | 3 |
 | `Great` / `Top` / `Top!` | 4 |
 
-This makes it possible to compare results consistently across questions and survey periods.
+Numeric values between `1` and `4` are also supported.
 
 ---
 
-## 💬 Verbatim Analysis
+## 📈 Interactive trend analysis
 
-Free-text answers are automatically extracted as **verbatims**.
+Trend charts are calculated by quarter and can display:
 
-Each verbatim can contain contextual information such as:
+- overall satisfaction;
+- all categories together;
+- one selected category;
+- a linear trend line for the selected series.
 
-- the original question;
-- associated category;
-- related rating;
-- sentiment;
+The dashboard automatically adapts its score axis to the visible data while keeping scores within the `0–4` range.
+
+A dedicated seniority trend view can also filter the evolution by employee length of service.
+
+---
+
+## 🕸️ Period-to-period radar comparison
+
+The radar view compares category scores between two consecutive survey periods.
+
+Users can move backward and forward through available quarters to compare how the category profile changed over time.
+
+The radar is shown when enough data exists to make the comparison meaningful.
+
+---
+
+## 🔎 Flexible date filtering
+
+The dashboard and verbatim analysis share period filtering logic.
+
+Supported modes:
+
+```text
+All data
+Month
+Year
+Custom period
+```
+
+Filtering is applied to derived analytics rather than rewriting stored data.
+
+---
+
+## 💬 Verbatim Explorer
+
+Free-text answers are extracted as individual verbatims.
+
+A verbatim can preserve:
+
+- comment text;
+- original source question;
+- category;
+- associated score when available;
+- derived sentiment;
 - response date;
 - employee role;
-- employee seniority;
+- seniority;
 - source file;
 - source sheet;
-- review status;
-- internal notes.
+- import identifier;
+- questionnaire configuration version.
 
-Comments can then be searched and filtered directly from the application.
+Users can search and filter verbatims by:
 
-Available filters include:
-
-- keyword search;
+- text query;
 - sentiment;
 - category;
-- review status;
-- month;
-- year;
-- custom date range.
+- local review status;
+- date period.
 
 ---
 
-## 🗂️ Feedback Review Workflow
+## ✅ Local feedback review workflow
 
-Each verbatim can be manually reviewed and assigned a status.
-
-Available statuses are:
+Each verbatim has a local review status:
 
 ```text
 New
@@ -143,182 +226,198 @@ Done
 Ignored
 ```
 
-Internal notes can also be attached to individual verbatims.
+Users can also attach a private internal note to a comment.
 
-This creates a lightweight workflow for tracking which employee comments:
-
-- still need attention;
-- require further analysis;
-- have already been handled;
-- can be ignored.
+This creates a lightweight review workflow directly inside the application without requiring an external task-management system.
 
 ---
 
-## ⚙️ Dynamic Questionnaire Configuration
+## ⚙️ Configurable questionnaire
 
-The questionnaire does not need to remain permanently hard-coded.
+The questionnaire can evolve directly from the application.
 
-Users can configure questions and categories directly from the application.
-
-This allows CellSpain to evolve when the source employee survey changes.
+### Categories
 
 Users can:
 
-- create categories;
+- add categories;
 - rename categories;
-- add category descriptions;
+- add descriptions;
 - enable or disable categories;
-- delete categories;
-- create questions;
-- map questions to categories;
-- specify the expected source column;
-- define the question response type;
-- enable or disable individual questions.
+- delete categories.
 
-Supported question types are:
+Deleting a category also removes the questions linked to that category from the **next configuration version**.
+
+### Questions
+
+Each configured question contains:
+
+```text
+Stable technical identity
+Display label
+Expected source column
+Category
+Response type
+Active / inactive state
+Optional score mapping
+```
+
+Supported response types:
 
 ```text
 Rating
-Free text / Verbatim
+Free text / verbatim
 ```
+
+Source columns can be resolved using:
+
+- their spreadsheet header;
+- normalized header matching;
+- Excel-style column references such as `B`, `U`, or `AA`.
 
 ---
 
-## 🧬 Versioned Questionnaire System
+## 🧬 Versioned questionnaire configurations
 
-One of the core design principles of CellSpain is:
+Every saved configuration creates a **new version**.
 
-> **Changing the questionnaire must never silently reinterpret historical data.**
+Old versions are kept in the dataset rather than being overwritten.
 
-Every saved questionnaire modification creates a new configuration version.
+Questionnaire configurations can also be:
 
-Existing imports remain associated with the configuration that was active when they were processed.
+- exported to JSON;
+- imported from JSON;
+- validated before activation;
+- reset to the initial legacy auto-detection mode.
 
-```mermaid
-flowchart TD
-    V1["Questionnaire v1"] --> I1["Import — Q1"]
-    V1 --> I2["Import — Q2"]
-    V1 --> I3["Import — Q3"]
+Validation protects against issues such as:
 
-    CHANGE["Questionnaire modified"] --> V2["Questionnaire v2"]
-
-    V2 --> I4["Import — Q4"]
-    V2 --> I5["Future imports"]
-
-    I1 --> HIST["Historical data keeps v1 interpretation"]
-    I2 --> HIST
-    I3 --> HIST
-
-    I4 --> NEW["New imports use v2"]
-    I5 --> NEW
-
-    classDef version fill:#eef2ff,stroke:#6366f1,stroke-width:2px
-    classDef data fill:#f8fafc,stroke:#64748b
-    classDef result fill:#ecfdf5,stroke:#10b981
-
-    class V1,V2 version
-    class I1,I2,I3,I4,I5 data
-    class HIST,NEW result
-```
-
-For example, if a question changes category:
-
-```text
-Version 1
-
-"Are you satisfied with your manager?"
-        ↓
-Management
-```
-
-and later becomes:
-
-```text
-Version 2
-
-"Are you satisfied with your manager?"
-        ↓
-Work Environment
-```
-
-previous imports still keep the original **Management** mapping.
-
-Only future imports use the new mapping.
-
-This makes historical comparisons much safer and prevents configuration changes from unexpectedly modifying existing analysis.
+- duplicate category keys;
+- duplicate question keys;
+- duplicate active source columns;
+- questions linked to missing categories;
+- malformed configuration files;
+- invalid score mappings.
 
 ---
 
-# 🔄 How It Works
+# Core Business Rule: Historical Stability
 
-At a high level, CellSpain transforms raw survey exports into structured analytics and qualitative feedback.
+This is the most important rule in the project:
+
+> **Changing the active questionnaire must never mutate, remap, or reinterpret already imported answers and verbatims.**
+
+Every answer and verbatim stores the context it had when it was imported, including category/question information and its questionnaire configuration version.
 
 ```mermaid
 flowchart LR
-    FILE["Survey File<br/>XLSX / CSV / JSON"]
+    V1["Questionnaire v1"] --> SNAP1["Import snapshot v1"]
+    SNAP1 --> I1["Import A"]
+    SNAP1 --> I2["Import B"]
 
-    FILE --> IMPORT["Import Engine"]
-    IMPORT --> PARSER["File Parser"]
+    CHANGE["Questionnaire edited"] --> V2["Questionnaire v2"]
+    V2 --> SNAP2["Import snapshot v2"]
+    SNAP2 --> I3["Import C"]
+    SNAP2 --> I4["Future imports"]
 
-    CONFIG["Active Questionnaire<br/>Configuration"] --> PARSER
+    I1 --> OLD["Historical data keeps v1 meaning"]
+    I2 --> OLD
 
-    PARSER --> RATINGS["Rating Answers"]
-    PARSER --> TEXT["Free-text Answers"]
-
-    RATINGS --> SCORES["Normalized Scores"]
-    TEXT --> VERBATIMS["Verbatims"]
-
-    SCORES --> DATA["Local Dataset"]
-    VERBATIMS --> DATA
-
-    DATA --> DASHBOARD["Analytics Dashboard"]
-    DATA --> EXPLORER["Verbatim Explorer"]
-    DATA --> HISTORY["Import History"]
-
-    classDef input fill:#eff6ff,stroke:#3b82f6
-    classDef process fill:#faf5ff,stroke:#a855f7
-    classDef storage fill:#fff7ed,stroke:#f97316
-    classDef output fill:#ecfdf5,stroke:#10b981
-
-    class FILE,CONFIG input
-    class IMPORT,PARSER,RATINGS,TEXT,SCORES,VERBATIMS process
-    class DATA storage
-    class DASHBOARD,EXPLORER,HISTORY output
+    I3 --> NEW["New data uses v2 meaning"]
+    I4 --> NEW
 ```
 
-The import system uses the active questionnaire configuration to determine how columns should be interpreted.
-
-Rating questions become numerical answers.
-
-Free-text questions become verbatims.
-
-The resulting structured dataset is then used by the dashboard and feedback explorer.
-
----
-
-# 📊 Analytics Dashboard
-
-The main dashboard gives an overview of the imported employee satisfaction data.
-
-## Global Indicators
-
-CellSpain calculates indicators such as:
+For example:
 
 ```text
-Average Score
-Median Score
-Evolution vs Previous Period
+Questionnaire v1
+"Are you satisfied with your manager?"
+        ↓
+Category: Management
 ```
 
-These metrics are derived directly from the currently filtered dataset.
+Later:
+
+```text
+Questionnaire v2
+"Are you satisfied with your manager?"
+        ↓
+Category: Work Environment
+```
+
+The result is:
+
+```text
+Old imports  → still categorized as "Management"
+New imports  → categorized as "Work Environment"
+```
+
+No historical recalculation is performed.
 
 ---
 
-## Average by Category
+# How Data Flows Through the App
 
-Answers are grouped into configurable categories.
+```mermaid
+flowchart TD
+    FILE["Survey file<br/>XLSX / CSV / JSON"]
 
-Default categories include areas such as:
+    FILE --> READ["Read file / workbook"]
+    CONFIG["Active questionnaire"] --> SNAPSHOT["Clone questionnaire snapshot"]
+    SNAPSHOT --> PLAN["Build import interpretation"]
+
+    READ --> PLAN
+    PLAN --> ROWS["Parse survey rows"]
+
+    ROWS --> RATINGS["Rating answers"]
+    ROWS --> COMMENTS["Free-text verbatims"]
+
+    RATINGS --> ACTION["Dataset reducer"]
+    COMMENTS --> ACTION
+
+    ACTION --> DATA["Local dataset"]
+
+    DATA --> DASH["Dashboard selectors"]
+    DATA --> VERB["Verbatim selectors"]
+    DATA --> HISTORY["Import history"]
+    DATA --> STORAGE["Local persistence"]
+
+    DASH --> UI1["Analytics UI"]
+    VERB --> UI2["Feedback review UI"]
+```
+
+The import action is bound to a cloned questionnaire snapshot before parsing begins.
+
+That means a settings change occurring while files are being processed cannot accidentally rebind those files to another configuration.
+
+---
+
+# Dashboard & Analytics
+
+The dashboard is built from derived selectors rather than storing duplicated analytics in the dataset.
+
+## Global metrics
+
+CellSpain computes:
+
+```text
+Average score
+Median score
+Average variation vs previous quarter
+Median variation vs previous quarter
+```
+
+The variation is calculated from the two latest available periods in the current filtered dataset.
+
+---
+
+## Category scores
+
+Responses are grouped by their historical category snapshot.
+
+The interface displays the average score for each available category.
+
+The initial legacy categories include:
 
 ```text
 Work environment
@@ -331,21 +430,13 @@ Material
 Proudness
 ```
 
-These categories can later be modified through the questionnaire configuration.
+Once explicit questionnaire configuration is used, categories can evolve between future imports.
 
 ---
 
-## Seniority Analysis
+## Quarter-based trends
 
-When seniority information is available in the imported survey, CellSpain can compare satisfaction levels across employee seniority groups.
-
-This helps identify whether employee experience differs depending on how long someone has been working at the company.
-
----
-
-## Trend Analysis
-
-Survey responses are grouped into calendar quarters:
+Dated answers are grouped into calendar quarters.
 
 ```text
 Q1
@@ -354,276 +445,196 @@ Q3
 Q4
 ```
 
-Trend charts can then show how overall satisfaction and individual categories evolve over time.
+The trend layer builds:
 
-This makes it easier to identify:
+- an overall series;
+- one series per category;
+- chronologically sorted period points.
 
-- improving areas;
-- declining areas;
-- recurring issues;
-- long-term patterns.
-
----
-
-## Radar Comparison
-
-Radar charts provide a visual comparison of satisfaction categories between survey periods.
-
-They help quickly identify where category scores have improved or deteriorated.
+When a single series is selected and at least two points are available, CellSpain can calculate and display a linear trend overlay.
 
 ---
 
-# 💬 Verbatim Analysis
+## Seniority analytics
 
-Quantitative indicators explain **what is happening**.
+When survey exports contain seniority information, CellSpain can calculate:
 
-Verbatims help explain **why it is happening**.
+- average satisfaction by seniority;
+- trend evolution for all seniority groups;
+- trend evolution for one selected seniority group.
 
-The Verbatim Explorer provides access to free-text employee feedback extracted during import.
+This helps highlight differences in experience across employee tenure.
 
-A verbatim can contain:
+---
+
+# Verbatim Explorer
+
+Quantitative scores answer:
+
+> **What is changing?**
+
+Verbatims help answer:
+
+> **Why might it be changing?**
+
+```mermaid
+flowchart LR
+    RESPONSE["Survey response"] --> SCORE["Rating"]
+    RESPONSE --> TEXT["Free-text answer"]
+
+    SCORE --> SENTIMENT["Score / sentiment context"]
+    TEXT --> VERBATIM["Verbatim"]
+
+    SENTIMENT --> VERBATIM
+
+    VERBATIM --> SEARCH["Search & filters"]
+    VERBATIM --> DETAIL["Comment details"]
+    DETAIL --> STATUS["Review status"]
+    DETAIL --> NOTE["Private local note"]
+```
+
+Sentiment is derived from the related score when one is available:
 
 ```text
-Comment
-Question
-Category
-Score
-Sentiment
-Date
-Role
-Seniority
-Source file
-Review status
-Internal note
+3.5 – 4.0  → Positive
+2.5 – 3.49 → Neutral
+Below 2.5   → Negative
+```
+
+If no meaningful score can be associated with a comment, sentiment may remain unavailable.
+
+---
+
+# Questionnaire Configuration
+
+## Legacy compatibility mode
+
+The initial questionnaire starts in a compatibility mode using historical automatic detection.
+
+This preserves behavior for existing data and older survey formats.
+
+Once the user saves an explicit questionnaire configuration:
+
+```text
+Legacy auto-detection
+        ↓
+Save configuration
+        ↓
+New explicit questionnaire version
+        ↓
+Future imports use configured questions/categories
+```
+
+Historical imports remain untouched.
+
+---
+
+## Stable identities
+
+Categories and questions use stable keys internally.
+
+These identities allow the application to distinguish the logical entity from its current presentation.
+
+For example, a future configuration may change:
+
+- a display label;
+- a category name;
+- a source column;
+- whether a question is active.
+
+The historical imported answer still retains the snapshot from the version that produced it.
+
+---
+
+## Import / export
+
+A configuration can be exported as:
+
+```text
+cellspain-questionnaire-v<version>.json
+```
+
+Imported configuration files are validated and activated as a **new version**.
+
+Older exported files containing now-removed legacy properties are normalized where compatibility is supported.
+
+---
+
+# Import System
+
+## Supported formats
+
+### XLSX
+
+For Excel workbooks, the survey parser reads the first worksheet.
+
+### CSV
+
+CSV content is parsed through the spreadsheet reader.
+
+### JSON
+
+JSON imports must contain an array of survey response objects.
+
+Example shape:
+
+```json
+[
+  {
+    "Completion time": "2026-01-15",
+    "Core Role": "Consultant",
+    "How long have you been working at the company?": "1–2 years",
+    "Work atmosphere": "Great"
+  }
+]
 ```
 
 ---
 
-## Search & Filtering
-
-Users can search through comments using keywords or phrases.
-
-Additional filters make it possible to narrow the results by:
-
-```text
-Sentiment
-Category
-Review status
-Period
-```
-
-Date filtering supports:
-
-```text
-All data
-Month
-Year
-Custom period
-```
-
-This allows users to move from a global dashboard metric to the individual comments behind it.
-
----
-
-# ⚙️ Questionnaire Configuration
-
-The questionnaire configuration page allows the import logic to evolve without requiring source-code modifications for every survey change.
-
----
-
-## Categories
-
-Each category contains a stable internal identifier and configurable metadata.
-
-A category can define:
-
-```text
-Name
-Description
-Active / Inactive status
-```
-
-Users can:
-
-- add categories;
-- rename categories;
-- disable categories;
-- remove categories.
-
-Deleting a category also removes its linked questions from the next configuration version.
-
----
-
-## Questions
-
-Each configured question contains information used by the import engine.
-
-Conceptually:
-
-```text
-Question
-│
-├── Stable identifier
-├── Display label
-├── Expected source column
-├── Category
-├── Response type
-└── Active status
-```
-
-The expected source column can be defined using a column header.
-
-The import logic also supports Excel-style column references such as:
-
-```text
-B
-U
-AA
-```
-
----
-
-## Stable Question Identifiers
-
-Questions use stable internal identifiers.
-
-These identifiers make it possible to preserve the logical identity of a question even if its:
-
-- display label changes;
-- category changes;
-- source column changes.
-
-This is important for maintaining consistent configuration history.
-
----
-
-## Configuration Validation
-
-Before saving or importing a questionnaire configuration, validation rules help prevent ambiguous setups.
-
-For example, the application checks for situations such as:
-
-- duplicate stable identifiers;
-- multiple active questions using the same source column;
-- questions linked to invalid categories;
-- malformed imported configurations.
-
-This reduces the risk of incorrect data interpretation during future imports.
-
----
-
-# 📤 Questionnaire Import / Export
-
-Questionnaire configurations can be exported as JSON.
-
-Example:
-
-```text
-cellspain-questionnaire-v2.json
-```
-
-A configuration can later be imported again.
-
-Imported configurations are activated as a **new version**, rather than silently replacing historical configurations.
-
-This can be useful for:
-
-- backing up questionnaire setups;
-- sharing configurations;
-- restoring previous structures;
-- preparing a configuration for a future survey.
-
----
-
-# 📥 Import System
-
-Survey files can be imported using:
-
-- drag & drop;
-- the native file picker.
-
-Supported formats:
-
-```text
-.xlsx
-.csv
-.json
-```
-
----
-
-## Import Pipeline
+## Import pipeline
 
 ```mermaid
 flowchart TD
-    START["Select or drop survey file"]
+    START["Select / drop file"] --> TYPE{"File type"}
 
-    START --> TYPE{"Supported format?"}
+    TYPE -->|XLSX| XLSX["Read first worksheet"]
+    TYPE -->|CSV| CSV["Read CSV rows"]
+    TYPE -->|JSON| JSON["Validate array of objects"]
 
-    TYPE -->|"XLSX"| XLSX["Read workbook"]
-    TYPE -->|"CSV"| CSV["Parse CSV"]
-    TYPE -->|"JSON"| JSON["Parse JSON"]
-    TYPE -->|"No"| ERROR["Import error"]
-
-    XLSX --> HEADERS["Normalize & inspect columns"]
+    XLSX --> HEADERS["Inspect headers"]
     CSV --> HEADERS
     JSON --> HEADERS
 
-    CONFIG["Active questionnaire version"] --> MATCH["Match configured questions"]
+    CONFIG["Questionnaire snapshot"] --> MATCH["Resolve configured questions"]
     HEADERS --> MATCH
 
-    MATCH --> CHECK{"Configured column found?"}
+    MATCH --> ACTIVE["Keep active questions<br/>in active categories"]
+    ACTIVE --> BUILTIN["Apply compatible built-in detection<br/>where applicable"]
 
-    CHECK -->|"Yes"| PROCESS["Process response"]
-    CHECK -->|"No"| WARNING["Generate warning"]
+    BUILTIN --> PARSE["Parse each respondent"]
+    PARSE --> ANSWERS["Create scored answers"]
+    PARSE --> VERBATIMS["Create verbatims"]
 
-    PROCESS --> RATING{"Response type"}
+    ANSWERS --> COMPLETE["Complete import"]
+    VERBATIMS --> COMPLETE
 
-    RATING -->|"Rating"| SCORE["Normalize score"]
-    RATING -->|"Verbatim"| COMMENT["Create verbatim"]
+    COMPLETE --> HISTORY["Import history"]
+    COMPLETE --> DATASET["Historical dataset"]
 
-    SCORE --> SAVE["Add to local dataset"]
-    COMMENT --> SAVE
-    WARNING --> SAVE
+    MATCH --> WARN["Detect unconfigured columns"]
+    WARN --> HISTORY
 
-    SAVE --> HISTORY["Register import in history"]
-
-    classDef input fill:#eff6ff,stroke:#3b82f6
-    classDef decision fill:#fff7ed,stroke:#f97316
-    classDef process fill:#faf5ff,stroke:#a855f7
-    classDef success fill:#ecfdf5,stroke:#10b981
-    classDef error fill:#fef2f2,stroke:#ef4444
-
-    class START,CONFIG input
-    class TYPE,CHECK,RATING decision
-    class XLSX,CSV,JSON,HEADERS,MATCH,PROCESS,SCORE,COMMENT process
-    class SAVE,HISTORY success
-    class ERROR error
+    TYPE -->|Invalid / unreadable| ERROR["Record failed import"]
+    ERROR --> HISTORY
 ```
 
 ---
 
-## Resilient Imports
+## Header resolution
 
-Unexpected questionnaire changes should not necessarily prevent an entire survey file from being imported.
+Configured source columns can be matched using normalized headers.
 
-When using an explicit questionnaire configuration:
-
-- known configured columns are processed;
-- missing configured columns generate warnings;
-- unknown columns can generate warnings;
-- inactive questions are ignored;
-- questions linked to inactive categories are ignored.
-
-This allows CellSpain to remain usable when survey exports change slightly.
-
----
-
-## Header Normalization
-
-The parser handles common formatting differences in spreadsheet headers.
-
-For example:
+Differences such as:
 
 ```text
 "Manager Trust"
@@ -631,170 +642,237 @@ For example:
 "MANAGER TRUST"
 ```
 
-can still be interpreted as the same logical column.
+can resolve to the same source header.
 
-This reduces failures caused by minor formatting differences in exported spreadsheets.
+Excel-style references are also supported:
+
+```text
+B
+U
+AA
+```
+
+These are resolved to the header found at that column position.
 
 ---
 
-## Import History
+## Import warnings
 
-Every attempted import is recorded in the import history.
+In explicit questionnaire mode, unknown non-system columns can be reported as warnings.
 
-An import can contain information such as:
+This gives visibility into questionnaire drift without necessarily blocking the entire import.
 
-```text
-File name
-Status
-Import date
-File size
-Processed rows
-Detected verbatims
-Warnings
-Questionnaire configuration version
-```
-
-Imports can have statuses such as:
-
-```text
-Completed
-Error
-```
-
-Completed imports can also be removed.
-
-When removing a completed import, the associated imported answers and verbatims are removed from the local dataset as well.
+The application also reserves explicitly configured columns, including inactive ones, so automatic compatibility logic does not silently reactivate a disabled question.
 
 ---
 
-# 🏗️ Architecture
+## Import removal
 
-CellSpain is built as a **Tauri desktop application** with a React frontend.
+Completed imports can be removed from the application.
 
-The application is organized around feature-specific services and local data persistence.
+Removing a completed import also removes the answers and verbatims associated with that import.
+
+The association primarily uses a stable `importId`, with compatibility fallbacks for older persisted datasets.
+
+---
+
+# Architecture
+
+The project has moved away from a large monolithic `App.tsx`.
+
+`App.tsx` now acts mainly as an application shell that connects navigation, dataset state, imports, period filters, and pages.
 
 ```mermaid
 flowchart TB
-    USER["User"]
+    APP["App.tsx<br/>Application shell"]
 
-    subgraph APP["CellSpain Desktop Application"]
+    APP --> HEADER["app/<br/>Navigation"]
+    APP --> PAGES["pages/<br/>Page composition"]
+    APP --> HOOKS["hooks/<br/>Application state orchestration"]
 
-        subgraph UI["React + TypeScript UI"]
-            DASH["Dashboard"]
-            VERB["Verbatim Explorer"]
-            REPORTS["Import Management"]
-            SETTINGS["Questionnaire Settings"]
-        end
+    PAGES --> DASHFEATURE["features/dashboard"]
+    PAGES --> FEEDBACKFEATURE["features/feedback"]
+    PAGES --> FILEFEATURE["features/files"]
+    PAGES --> SETTINGSFEATURE["features/settings"]
 
-        subgraph SERVICES["Application Logic"]
-            FILES["File Import Service"]
-            FEEDBACK["Feedback Logic"]
-            QUESTIONNAIRE["Questionnaire Service"]
-            FILTERS["Date & Period Filters"]
-        end
+    HOOKS --> DOMAIN["domain/<br/>Business rules & immutable models"]
+    FILEFEATURE --> DOMAIN
+    SETTINGSFEATURE --> DOMAIN
+    DASHFEATURE --> DOMAIN
+    FEEDBACKFEATURE --> DOMAIN
 
-        subgraph LOCAL["Local Storage Layer"]
-            DATASET["Dataset"]
-            STORAGE["Browser Local Storage"]
-        end
+    DOMAIN --> SHARED["shared/<br/>Dates, statistics, UI, persistence, utils"]
 
-        DASH --> FEEDBACK
-        DASH --> FILTERS
-
-        VERB --> FEEDBACK
-        VERB --> FILTERS
-
-        REPORTS --> FILES
-        SETTINGS --> QUESTIONNAIRE
-
-        FILES --> DATASET
-        QUESTIONNAIRE --> DATASET
-        FEEDBACK --> DATASET
-
-        DATASET <--> STORAGE
-    end
-
-    SURVEY["Survey Files<br/>XLSX / CSV / JSON"] --> FILES
-
-    USER --> DASH
-    USER --> VERB
-    USER --> REPORTS
-    USER --> SETTINGS
-
-    TAURI["Tauri Native Runtime"] --- APP
-
-    classDef external fill:#eff6ff,stroke:#3b82f6
-    classDef ui fill:#f8fafc,stroke:#64748b
-    classDef service fill:#faf5ff,stroke:#a855f7
-    classDef storage fill:#fff7ed,stroke:#f97316
-
-    class USER,SURVEY,TAURI external
-    class DASH,VERB,REPORTS,SETTINGS ui
-    class FILES,FEEDBACK,QUESTIONNAIRE,FILTERS service
-    class DATASET,STORAGE storage
+    SHARED --> STORAGE["localStorage"]
+    APP --> TAURI["Tauri 2 native shell"]
 ```
+
+The architecture separates responsibilities into distinct layers.
 
 ---
 
-## Frontend Layer
+## `app/`
 
-The frontend is built with:
+Application-wide navigation and shell-level types.
+
+Examples:
 
 ```text
-React
-TypeScript
-Vite
+AppHeader
+Page types
 ```
 
-React manages the user interface while TypeScript provides strongly typed application logic.
+---
+
+## `pages/`
+
+Page composition.
+
+Pages connect features without owning low-level business logic.
+
+Current page-level areas include:
+
+```text
+Dashboard
+Verbatims
+Imports / Reports
+Settings
+```
 
 ---
 
-## Application Services
+## `domain/`
 
-Business logic is separated into feature-oriented modules.
+Core business concepts and rules.
 
-Main responsibilities include:
+This layer contains concepts such as:
 
-### File Service
+```text
+Dataset
+Dataset reducer
+Questionnaire configuration
+Survey answers
+Verbatims
+Survey mapping
+Import association
+```
 
-Responsible for:
+The reducer centralizes dataset mutations through explicit actions such as:
 
-- reading imported files;
-- interpreting workbook data;
-- matching configured questions;
-- extracting ratings;
-- extracting verbatims;
-- generating import warnings.
+```text
+IMPORT_COMPLETED
+IMPORT_FAILED
+IMPORT_REMOVED
+VERBATIM_UPDATED
+QUESTIONNAIRE_ACTIVATED
+```
 
-### Questionnaire Service
+This makes important state transitions easier to reason about and test.
 
-Responsible for:
+---
 
-- configuration validation;
+## `features/`
+
+Feature-specific logic and UI.
+
+### `features/dashboard`
+
+Contains:
+
+- analytics selectors;
+- chart utilities;
+- metric components;
+- category scores;
+- trend charts;
+- seniority analytics;
+- radar comparison.
+
+### `features/feedback`
+
+Contains:
+
+- verbatim selectors;
+- filters;
+- cards;
+- details modal;
+- local review workflow.
+
+### `features/files`
+
+Contains:
+
+- import UI;
+- import history;
+- import orchestration;
+- parsing logic;
+- questionnaire matching;
+- survey parsing.
+
+### `features/settings`
+
+Contains:
+
+- questionnaire configuration;
+- category/question editing;
+- questionnaire validation;
 - version creation;
-- import/export;
-- reset behavior;
-- active questionnaire management.
-
-### Feedback Logic
-
-Responsible for:
-
-- score calculations;
-- averages;
-- median values;
-- quarter grouping;
-- period ordering;
-- visualization helpers.
+- import/export/reset behavior.
 
 ---
 
-## Local Persistence
+## `hooks/`
 
-The current application dataset is persisted locally using browser `localStorage` inside the Tauri application.
+Application orchestration hooks.
 
-The stored dataset contains:
+Examples:
+
+```text
+useDataset
+useImports
+usePeriodFilter
+```
+
+`useDataset` uses a reducer and persists changes after state transitions.
+
+---
+
+## `shared/`
+
+Reusable technical utilities.
+
+Examples:
+
+```text
+Date-range helpers
+Quarter helpers
+Statistics
+Reusable UI controls
+Persistence
+ID/date utilities
+```
+
+---
+
+# Local Persistence & Privacy
+
+CellSpain is designed as a local-first application.
+
+Imported survey data is processed locally and the main dataset is currently persisted through browser `localStorage` inside the Tauri application.
+
+```mermaid
+flowchart LR
+    USERFILE["Employee survey"] --> APP["CellSpain"]
+    APP --> PROCESS["Local processing"]
+    PROCESS --> STORE["Local dataset"]
+    STORE --> DASH["Dashboard"]
+    STORE --> VERB["Verbatim review"]
+    STORE --> CONFIG["Questionnaire history"]
+
+    INTERNET["Remote application backend"]
+    APP -. "Not required" .-> INTERNET
+```
+
+The persisted dataset contains:
 
 ```text
 Answers
@@ -803,136 +881,136 @@ Import history
 Questionnaire versions
 ```
 
-This keeps the application functional offline without requiring a backend server.
+No remote application backend is required for the core workflow.
+
+> **Important:** local storage is not the same as encrypted storage. The current persistence layer should not be considered encryption-at-rest.
+
+The project includes Tauri SQL/SQLite dependencies, but the main application dataset currently uses `localStorage`.
 
 ---
 
-# 🔒 Privacy & Local-First Design
+# Tech Stack
 
-Employee feedback can contain sensitive information.
+## Frontend
 
-CellSpain is therefore designed around local processing.
-
-```mermaid
-flowchart LR
-    FILE["Employee Survey"] --> APP["CellSpain"]
-
-    subgraph DEVICE["User Device"]
-        APP --> PROCESS["Local Processing"]
-        PROCESS --> STORAGE["Local Persistence"]
-
-        STORAGE --> DASH["Dashboard"]
-        STORAGE --> VERB["Verbatim Analysis"]
-    end
-
-    CLOUD["External Backend"]
-
-    APP -. "No application backend required" .- CLOUD
-
-    classDef local fill:#ecfdf5,stroke:#10b981
-    classDef external fill:#f8fafc,stroke:#94a3b8,stroke-dasharray:5
-
-    class APP,PROCESS,STORAGE,DASH,VERB local
-    class CLOUD external
-```
-
-Imported survey data is processed locally by the application.
-
-The current architecture does not require a remote backend to perform survey analysis.
-
-This means the core workflow can operate entirely on the user's machine.
-
-> **Note:** Local-first storage should not be confused with encrypted storage. The current application persists its dataset locally and does not currently implement dedicated encryption-at-rest for survey data.
-
----
-
-# 🛠️ Tech Stack
-
-## Application
-
-| Technology | Purpose |
+| Technology | Role |
 |---|---|
-| **Tauri 2** | Desktop application runtime |
-| **React 19** | User interface |
-| **TypeScript** | Type-safe application logic |
+| **React 19** | UI and component composition |
+| **TypeScript 5.8** | Type-safe application logic |
 | **Vite 7** | Development server and frontend build |
-| **Rust** | Native Tauri application layer |
+| **Recharts 3** | Dashboard charts and radar visualizations |
+| **Lucide React** | Icons |
+| **SheetJS / XLSX** | XLSX and CSV parsing |
 
----
+## Application architecture
 
-## Data & Visualization
-
-| Technology | Purpose |
+| Technology / Pattern | Role |
 |---|---|
-| **SheetJS / XLSX** | Spreadsheet parsing |
-| **Recharts** | Charts and data visualization |
-| **TanStack Table** | Table tooling |
-| **Zod** | Schema validation |
-| **Zustand** | State-management dependency |
-| **Lucide React** | Interface icons |
+| **React hooks** | UI and application orchestration |
+| **Reducer-based dataset state** | Centralized immutable dataset transitions |
+| **Selectors** | Derived analytics and filtering |
+| **Feature-oriented modules** | Separation by business capability |
 
----
+## Desktop layer
 
-## Tauri Plugins
+| Technology | Role |
+|---|---|
+| **Tauri 2** | Native desktop shell and bundling |
+| **Rust** | Native Tauri layer |
+| **Tauri FS plugin** | Filesystem capability |
+| **Tauri SQL plugin** | SQLite capability available in the project |
+| **Tauri Opener plugin** | Native opening capability |
 
-The project includes Tauri integrations for:
+## Additional dependencies
+
+The project also includes:
 
 ```text
-Filesystem access
-Native opening capabilities
-SQL capabilities
+TanStack React Table
+React Hook Form
+Zod
+Zustand
+clsx
 ```
 
-The current application dataset itself is still persisted through local storage.
-
----
+Some dependencies are available for ongoing or future application evolution and are not necessarily central to every current workflow.
 
 ## Testing
 
-| Technology | Purpose |
+| Technology | Role |
 |---|---|
-| **Vitest** | Automated unit testing |
+| **Vitest 4** | Automated tests |
 
 ---
 
-# 📁 Project Structure
+# Project Structure
 
-A simplified overview of the project:
+Simplified structure of the refactored frontend:
 
 ```text
 CellSpain/
-│
 ├── public/
-│
 ├── src/
+│   ├── app/
+│   │   ├── AppHeader.tsx
+│   │   └── app.types.ts
 │   │
-│   ├── assets/
+│   ├── domain/
+│   │   ├── dataset.reducer.ts
+│   │   ├── dataset.types.ts
+│   │   ├── import-association.ts
+│   │   ├── questionnaire.defaults.ts
+│   │   ├── questionnaire.types.ts
+│   │   ├── survey.mapping.ts
+│   │   └── survey.types.ts
 │   │
 │   ├── features/
+│   │   ├── dashboard/
+│   │   │   ├── components/
+│   │   │   ├── chart.utils.ts
+│   │   │   ├── dashboard.selectors.ts
+│   │   │   ├── dashboard.types.ts
+│   │   │   └── dashboard.utils.ts
 │   │   │
 │   │   ├── feedback/
-│   │   │   ├── feedback.service.ts
-│   │   │   ├── feedback.store.ts
+│   │   │   ├── components/
+│   │   │   ├── feedback.selectors.ts
 │   │   │   └── feedback.types.ts
 │   │   │
 │   │   ├── files/
+│   │   │   ├── components/
+│   │   │   ├── parsing/
+│   │   │   │   ├── file.reader.ts
+│   │   │   │   ├── questionnaire.matcher.ts
+│   │   │   │   └── survey.parser.ts
 │   │   │   ├── file.service.ts
-│   │   │   ├── file.service.test.ts
-│   │   │   └── file.types.ts
+│   │   │   └── useImports.ts
 │   │   │
 │   │   └── settings/
+│   │       ├── components/
 │   │       ├── QuestionnaireSettings.tsx
 │   │       ├── questionnaire.service.ts
-│   │       ├── questionnaire.service.test.ts
-│   │       ├── questionnaire.types.ts
-│   │       └── settings.store.ts
+│   │       └── useQuestionnaireEditor.ts
+│   │
+│   ├── hooks/
+│   │   ├── useDataset.ts
+│   │   └── usePeriodFilter.ts
+│   │
+│   ├── pages/
+│   │   ├── DashboardPage.tsx
+│   │   ├── ImportsPage.tsx
+│   │   ├── SettingsPage.tsx
+│   │   └── VerbatimsPage.tsx
 │   │
 │   ├── shared/
+│   │   ├── dates/
 │   │   ├── db/
+│   │   ├── statistics/
+│   │   ├── ui/
 │   │   └── utils/
 │   │
+│   ├── styles/
 │   ├── App.tsx
-│   ├── App.css
 │   └── main.tsx
 │
 ├── src-tauri/
@@ -943,53 +1021,44 @@ CellSpain/
 │   └── tauri.conf.json
 │
 ├── package.json
-├── package-lock.json
 ├── tsconfig.json
 ├── vite.config.ts
 └── README.md
 ```
 
-The application follows a feature-oriented organization.
+The key direction is:
 
 ```text
-features/files
-    ↓
-Survey parsing and imports
-
-features/feedback
-    ↓
-Analytics and verbatim logic
-
-features/settings
-    ↓
-Questionnaire configuration and filters
-
-shared/db
-    ↓
-Local dataset persistence
+App shell
+   ↓
+Pages
+   ↓
+Features + hooks
+   ↓
+Domain rules
+   ↓
+Shared technical utilities
 ```
+
+This keeps page components focused on composition while business rules and derived calculations live in dedicated modules.
 
 ---
 
-# 🚀 Getting Started
+# Getting Started
 
 ## Prerequisites
 
-Before running CellSpain locally, make sure you have:
+Install:
 
-```text
-Node.js
-npm
-Rust
-Cargo
-Tauri system dependencies
-```
-
-The exact native dependencies required by Tauri depend on your operating system.
+- **Node.js**
+- **npm**
+- **Rust**
+- **Cargo**
+- the native system dependencies required by **Tauri 2** for your operating system
 
 ---
 
-## 1. Clone the repository
+## Clone the repository
 
 ```bash
 git clone https://github.com/nathanda95/CellSpain.git
@@ -998,7 +1067,7 @@ cd CellSpain
 
 ---
 
-## 2. Install dependencies
+## Install dependencies
 
 ```bash
 npm install
@@ -1006,45 +1075,35 @@ npm install
 
 ---
 
-## 3. Run the desktop application
+## Run the desktop application
 
 ```bash
 npm run tauri dev
 ```
 
-This will:
-
-```text
-Start the Vite development server
-        ↓
-Compile the Tauri application
-        ↓
-Launch CellSpain as a desktop application
-```
+Tauri will start the Vite frontend and launch the desktop application.
 
 ---
 
-# 💻 Development
+# Development
 
-## Frontend-only Development
-
-The React frontend can be started independently with:
+## Run the frontend only
 
 ```bash
 npm run dev
 ```
 
-The development server is configured to run on:
+The Vite development server uses:
 
 ```text
 http://localhost:1420
 ```
 
-This mode can be useful when working primarily on the user interface.
+The development configuration uses a fixed port because Tauri expects the configured dev URL.
 
 ---
 
-## Production Frontend Build
+## Build the frontend
 
 ```bash
 npm run build
@@ -1054,217 +1113,184 @@ This runs TypeScript compilation followed by the Vite production build.
 
 ---
 
-## Desktop Build
-
-To generate a production desktop bundle:
+## Build the desktop application
 
 ```bash
 npm run tauri build
 ```
 
-Tauri will generate the appropriate application bundle for the target platform.
+Tauri will produce the platform-specific application bundle.
 
 ---
 
-# 🧪 Testing
+## Preview the frontend production build
 
-CellSpain uses **Vitest** for automated tests.
+```bash
+npm run preview
+```
 
-Run the test suite with:
+---
+
+# Testing
+
+Run the automated test suite with:
 
 ```bash
 npm test
 ```
 
-Current tests cover important questionnaire and import behaviors such as:
+The refactored project contains tests around several important boundaries, including:
 
-- immutable questionnaire version creation;
-- stable question identifiers;
-- category mapping;
-- configuration import/export;
-- malformed configuration rejection;
-- duplicate configuration detection;
-- normalized spreadsheet headers;
-- Excel column references;
-- missing configured columns;
-- unknown column warnings;
-- inactive categories;
-- historical automatic detection compatibility.
+```text
+Dataset reducer behavior
+Import/data association
+Survey mapping
+Questionnaire services
+File parsing/import behavior
+Dashboard selectors
+Feedback selectors
+Statistics
+Database persistence/migration compatibility
+```
 
-These tests are particularly important because the application's import behavior must remain predictable even as questionnaires evolve.
+These tests are especially important for the project's core guarantee:
+
+> **refactoring or changing a future questionnaire must not silently alter historical data semantics.**
 
 ---
 
-# 🔁 Typical Workflow
+# Design Principles
 
-A typical CellSpain workflow looks like this:
+## 1. Historical data is immutable in meaning
+
+Imported answers and verbatims preserve the question/category context they had at import time.
+
+The active questionnaire is never used to retroactively recalculate old imports.
+
+---
+
+## 2. Questionnaire evolution is expected
+
+Survey structure is treated as something that can change over time, not as a permanently fixed schema.
+
+---
+
+## 3. State transitions should be explicit
+
+Dataset updates are centralized through a reducer instead of scattered direct mutations.
+
+---
+
+## 4. Analytics should be derived
+
+Averages, medians, period comparisons, category grouping, and trends are calculated from the dataset through selectors and utilities.
+
+This avoids storing duplicated analytics that could become stale.
+
+---
+
+## 5. Features should be isolated
+
+Dashboard, feedback, files, and settings each own their feature-specific logic and components.
+
+`App.tsx` remains an application shell rather than becoming a monolithic component.
+
+---
+
+## 6. Imports should be explainable
+
+Warnings and failed imports remain visible in history so users can understand why data may be missing or partially mapped.
+
+---
+
+## 7. Local-first by default
+
+The core application does not require a remote backend to analyze employee feedback.
+
+---
+
+# Typical Workflow
 
 ```mermaid
 flowchart TD
-    CONFIG["1 · Configure Questionnaire"]
+    Q["Configure / verify questionnaire"]
+    Q --> IMPORT["Import survey export"]
+    IMPORT --> CHECK{"Import result"}
 
-    CONFIG --> IMPORT["2 · Import Survey Files"]
+    CHECK -->|Completed| DASH["Analyze dashboard"]
+    CHECK -->|Warnings| REVIEWWARN["Review mapping warnings"]
+    CHECK -->|Error| FIX["Correct file or configuration"]
 
-    IMPORT --> VALIDATE{"Import result"}
-
-    VALIDATE -->|"Completed"| ANALYZE["3 · Analyze Dashboard"]
-    VALIDATE -->|"Warnings"| WARN["Review Import Warnings"]
-    VALIDATE -->|"Error"| FIX["Fix File / Configuration"]
-
-    WARN --> ANALYZE
+    REVIEWWARN --> DASH
     FIX --> IMPORT
 
-    ANALYZE --> TRENDS["4 · Identify Trends & Weak Areas"]
+    DASH --> TREND["Identify trends & weak areas"]
+    TREND --> VERB["Explore related verbatims"]
+    VERB --> REVIEW["Set status / add local notes"]
+    REVIEW --> ACTION["Identify actions"]
 
-    TRENDS --> VERB["5 · Explore Related Verbatims"]
+    ACTION --> CHANGE{"Questionnaire changed<br/>for next survey?"}
+    CHANGE -->|No| NEXT["Next survey period"]
+    CHANGE -->|Yes| VERSION["Save new questionnaire version"]
 
-    VERB --> FILTER["6 · Search & Filter Feedback"]
-
-    FILTER --> REVIEW["7 · Review Comments"]
-
-    REVIEW --> STATUS["8 · Assign Status & Notes"]
-
-    STATUS --> DECISION["9 · Identify Improvement Actions"]
-
-    DECISION --> EVOLVE{"Questionnaire changes?"}
-
-    EVOLVE -->|"No"| NEXT["Next Survey Period"]
-    EVOLVE -->|"Yes"| NEWCONFIG["Create New Questionnaire Version"]
-
-    NEWCONFIG --> NEXT
+    VERSION --> NEXT
     NEXT --> IMPORT
-
-    classDef config fill:#eef2ff,stroke:#6366f1
-    classDef import fill:#eff6ff,stroke:#3b82f6
-    classDef analysis fill:#faf5ff,stroke:#a855f7
-    classDef action fill:#ecfdf5,stroke:#10b981
-    classDef decision fill:#fff7ed,stroke:#f97316
-
-    class CONFIG,NEWCONFIG config
-    class IMPORT,WARN,FIX import
-    class ANALYZE,TRENDS,VERB,FILTER,REVIEW analysis
-    class STATUS,DECISION,NEXT action
-    class VALIDATE,EVOLVE decision
-```
-
-This creates a continuous feedback cycle:
-
-```text
-Collect
-   ↓
-Analyze
-   ↓
-Understand
-   ↓
-Act
-   ↓
-Adapt
-   ↓
-Collect again
 ```
 
 ---
 
-# 🧭 Design Principles
+# Possible Next Steps
 
-CellSpain is built around several core principles.
+Potential future improvements include:
 
-## 1. Historical Data Must Stay Stable
+### Persistence
 
-Changing today's questionnaire should not silently change yesterday's analysis.
+- migrate the main dataset from `localStorage` to SQLite;
+- introduce structured schema migrations;
+- improve scalability for larger survey histories.
 
-Questionnaire versioning protects historical interpretation.
+### Reporting
 
----
+- export dashboards to PDF;
+- export analytics to Excel;
+- generate presentation-ready reports.
 
-## 2. Survey Changes Should Not Break the Application
+### Verbatim intelligence
 
-The questionnaire configuration allows questions and categories to evolve without requiring the entire import pipeline to be rewritten.
+- topic clustering;
+- recurring-theme detection;
+- richer sentiment analysis;
+- AI-assisted summaries with explicit privacy controls.
 
----
+### Import experience
 
-## 3. Quantitative and Qualitative Feedback Belong Together
+- import preview before confirmation;
+- assisted question-to-column mapping;
+- clearer mapping diagnostics;
+- schema-drift suggestions.
 
-A satisfaction score alone does not explain the reason behind it.
+### Privacy
 
-CellSpain connects numerical indicators with employee verbatims to provide more context.
-
----
-
-## 4. Data Should Stay Close to the User
-
-The application is designed to work locally without requiring a remote analysis backend.
-
----
-
-## 5. Imports Should Be Understandable
-
-When something unexpected happens during an import, the user should receive warnings instead of having data silently ignored whenever possible.
-
----
-
-# 🗺️ Future Improvements
-
-Possible future improvements include:
-
-### 💾 Persistence
-
-- migrate the main dataset from localStorage to SQLite;
-- add structured database migrations;
-- improve storage scalability for larger survey histories.
-
-### 🧠 Text Analysis
-
-- advanced sentiment analysis;
-- automatic topic detection;
-- recurring-theme extraction;
-- keyword clustering;
-- AI-assisted verbatim summaries.
-
-### 📊 Analytics
-
-- more advanced employee segmentation;
-- cross-country comparisons;
-- configurable scoring scales;
-- additional trend visualizations;
-- custom dashboard metrics.
-
-### 📤 Reporting
-
-- PDF report generation;
-- Excel report export;
-- automated executive summaries;
-- presentation-ready dashboard exports.
-
-### 🔄 Import Intelligence
-
-- automatic questionnaire schema detection;
-- question-mapping suggestions;
-- improved import diagnostics;
-- preview before confirming an import.
-
-### 🔐 Privacy
-
-- optional encrypted local storage;
-- configurable data retention;
-- secure dataset export/import.
+- optional encryption-at-rest;
+- configurable data-retention policies;
+- secure backup/restore workflows.
 
 ---
 
-# 👤 Author
+# Author
 
 **Nathan Daligault**
 
-GitHub: `@nathanda95`
+GitHub: [@nathanda95](https://github.com/nathanda95)
 
 ---
 
 <div align="center">
 
-### 📊 From raw survey data to actionable employee insights.
+### From evolving survey files to stable, actionable employee insights.
 
 **CellSpain**
 
-*Local analysis · Flexible questionnaires · Historical consistency*
+*Local-first · Versioned questionnaires · Historical consistency*
 
 </div>
