@@ -31,7 +31,6 @@ export function AppHeader({ page, onNavigate }: { page: Page; onNavigate: (page:
         >
           <Settings size={19} />
         </button>
-        <span>Local analysis · offline</span>
       </div>
     </header>
   );
