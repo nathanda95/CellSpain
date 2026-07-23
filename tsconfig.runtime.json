@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "/mnt/data/cellspain_runtime/build",
+    "rootDir": "src",
+    "esModuleInterop": true
+  },
+  "files": [
+    "typecheck-stubs.d.ts",
+    "src/domain/questionnaire.types.ts",
+    "src/domain/questionnaire.defaults.ts",
+    "src/domain/survey.types.ts",
+    "src/domain/survey.mapping.ts",
+    "src/domain/dataset.types.ts",
+    "src/domain/import-association.ts",
+    "src/domain/dataset.reducer.ts",
+    "src/shared/statistics/statistics.ts",
+    "src/shared/utils/id.ts",
+    "src/features/settings/questionnaire.types.ts",
+    "src/features/settings/questionnaire.service.ts",
+    "src/features/files/parsing/file.reader.ts",
+    "src/features/files/parsing/questionnaire.matcher.ts",
+    "src/features/files/parsing/survey.parser.ts",
+    "src/features/files/file.service.ts"
+  ]
+}

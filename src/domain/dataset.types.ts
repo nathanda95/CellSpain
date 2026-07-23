@@ -1,17 +1,5 @@
-import type { Verbatim } from "../feedback/feedback.types";
-import type { QuestionnaireConfig } from "../settings/questionnaire.types";
-
-export type Answer = {
-  question: string;
-  category: string;
-  score: number;
-  date?: string;
-  seniority?: string;
-  source?: string;
-  importId?: string;
-  questionKey?: string;
-  configurationVersionId?: string;
-};
+import type { QuestionnaireConfig } from "./questionnaire.types";
+import type { Answer, Verbatim } from "./survey.types";
 
 export type ImportItem = {
   id: string;
@@ -23,6 +11,7 @@ export type ImportItem = {
   verbatims: number;
   error?: string;
   warnings?: string[];
+  /** Questionnaire snapshot used for this import. Optional only for legacy persisted data. */
   configurationVersionId?: string;
 };
 
@@ -30,6 +19,7 @@ export type Dataset = {
   answers: Answer[];
   verbatims: Verbatim[];
   imports: ImportItem[];
+  /** Append-only questionnaire history. Old versions must remain available forever. */
   questionnaireVersions: QuestionnaireConfig[];
 };
 

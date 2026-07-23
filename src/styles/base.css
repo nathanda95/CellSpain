@@ -1,0 +1,155 @@
+:root {
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #1c2332;
+  background: #f8f9ff;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.app {
+  min-height: 100vh;
+  background: #f8f9ff;
+}
+header {
+  height: 64px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  border-bottom: 1px solid #ececf5;
+  gap: 42px;
+}
+.brand {
+  font-size: 21px;
+  font-weight: 700;
+  color: #4847dc;
+}
+nav {
+  display: flex;
+  align-self: stretch;
+  gap: 24px;
+}
+nav button {
+  border: 0;
+  background: none;
+  color: #4e5064;
+  font: inherit;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+nav button.active {
+  color: #4847dc;
+  border-color: #4847dc;
+}
+.header-tools {
+  margin-left: auto;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  color: #55586a;
+  font-size: 13px;
+}
+main {
+  padding: 44px 32px 70px;
+  max-width: 1920px;
+  margin: auto;
+}
+.title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+.title h1 {
+  font-size: 29px;
+  margin: 0 0 7px;
+  letter-spacing: -0.8px;
+}
+.title p {
+  margin: 0;
+  color: #55586a;
+}
+.primary,
+.outline {
+  border: 0;
+  background: #4847dc;
+  color: #fff;
+  border-radius: 6px;
+  padding: 10px 15px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.outline {
+  border: 1px solid #c9cbdf;
+  color: #4847dc;
+  background: transparent;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin: 20px 0 32px;
+}
+.metric,
+.card,
+.verbatim,
+.import-area {
+  background: #fff;
+  border: 1px solid #dcddec;
+  border-radius: 12px;
+}
+.metric {
+  min-height: 136px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.metric span {
+  font-size: 13px;
+  color: #55586a;
+}
+.metric strong {
+  font-size: 42px;
+  line-height: 1;
+}
+.metric small {
+  color: #497bd9;
+}
+.metric .metric-variation {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 0;
+  background: none;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
+}
+.metric .metric-variation span {
+  color: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+.metric .metric-variation.positive {
+  color: #08785c;
+}
+.metric .metric-variation.negative {
+  color: #bd3038;
+}
+.metric .metric-variation.neutral {
+  color: #65697a;
+}

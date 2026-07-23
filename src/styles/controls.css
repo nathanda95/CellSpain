@@ -1,0 +1,21 @@
+.icon {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d8daea;
+  border-radius: 6px;
+  background: #fff;
+  color: #55586a;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+.icon:hover {
+  background: #f5f6fc;
+}
+.icon.danger {
+  color: #bd3038;
+  border-color: #f0c6ca;
+}
+.icon.danger:hover {
+  background: #ffebeb;
+}

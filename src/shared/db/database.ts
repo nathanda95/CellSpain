@@ -1,29 +1,56 @@
-import { EMPTY_DATASET, type Dataset } from "../../features/files/file.types";
-import { createInitialQuestionnaire } from "../../features/settings/questionnaire.types";
+import { EMPTY_DATASET, type Dataset } from "../../domain/dataset.types";
+import { createInitialQuestionnaire } from "../../domain/questionnaire.defaults";
 
 const STORAGE_KEY = "cellspain-data";
 
+const emptyDataset = (): Dataset => structuredClone(EMPTY_DATASET);
+
 export const loadDataset = (): Dataset => {
-  // Une valeur corrompue dans localStorage ne doit pas empêcher l'application
-  // de démarrer : elle est traitée comme un jeu de données vide.
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") as Partial<Dataset> | null;
-    const dataset = { ...EMPTY_DATASET, ...(stored ?? {}) } as Dataset;
-    if (!dataset.questionnaireVersions?.length) {
-      const initial = createInitialQuestionnaire();
-      dataset.questionnaireVersions = [initial];
-      dataset.imports = dataset.imports.map((item) => ({
-        ...item,
-        configurationVersionId: item.configurationVersionId ?? initial.id,
-      }));
+    const dataset = { ...emptyDataset(), ...(stored ?? {}) } as Dataset;
+    dataset.answers = Array.isArray(dataset.answers) ? dataset.answers : [];
+    dataset.verbatims = Array.isArray(dataset.verbatims) ? dataset.verbatims : [];
+    dataset.imports = Array.isArray(dataset.imports) ? dataset.imports : [];
+    dataset.questionnaireVersions = Array.isArray(dataset.questionnaireVersions)
+      ? dataset.questionnaireVersions
+      : [];
+
+    if (!dataset.questionnaireVersions.length) {
+      dataset.questionnaireVersions = [createInitialQuestionnaire()];
     }
+
+    // Backfill only missing linkage metadata. Historical labels, categories,
+    // scores and text are never recomputed from the current questionnaire.
+    const fallbackVersionId = dataset.questionnaireVersions[0].id;
+    dataset.imports = dataset.imports.map((item) => ({
+      ...item,
+      configurationVersionId: item.configurationVersionId ?? fallbackVersionId,
+    }));
+    const versionByImportId = new Map(
+      dataset.imports.map((item) => [item.id, item.configurationVersionId]),
+    );
+    dataset.answers = dataset.answers.map((answer) => ({
+      ...answer,
+      configurationVersionId:
+        answer.configurationVersionId ??
+        (answer.importId ? versionByImportId.get(answer.importId) : undefined) ??
+        fallbackVersionId,
+    }));
+    dataset.verbatims = dataset.verbatims.map((verbatim) => ({
+      ...verbatim,
+      configurationVersionId:
+        verbatim.configurationVersionId ??
+        (verbatim.importId ? versionByImportId.get(verbatim.importId) : undefined) ??
+        fallbackVersionId,
+    }));
+
     return dataset;
   } catch {
-    return EMPTY_DATASET;
+    return emptyDataset();
   }
 };
 
 export const saveDataset = (dataset: Dataset) => {
-  // Toute la persistance reste locale afin de garantir le fonctionnement hors ligne.
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dataset));
 };
