@@ -1,9 +1,13 @@
-# .github/workflows/build-windows.yml
-
 name: Build Windows
 
 on:
+  # Permet toujours de lancer le build manuellement
   workflow_dispatch:
+
+  # Lance automatiquement le build quand un tag "build-*" est push
+  push:
+    tags:
+      - "build-*"
 
 jobs:
   build:
