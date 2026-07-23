@@ -10,7 +10,7 @@ const NAVIGATION_ITEMS = [
 export function AppHeader({ page, onNavigate }: { page: Page; onNavigate: (page: Page) => void }) {
   return (
     <header>
-      <div className="brand">CellSpain</div>
+      <div className="brand">People Pulse</div>
       <nav>
         {NAVIGATION_ITEMS.map((item) => (
           <button
